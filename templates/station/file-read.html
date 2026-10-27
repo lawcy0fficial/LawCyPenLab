@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}file:// SSRF{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p1">P1</span>
+    <h2>file:// SSRF — urllib Multi-Protocol</h2>
+    <p class="mono-dim">urllib.request.urlopen() accepts file://, ftp://, http:// — unlike requests</p>
+  </div>
+  <div class="vuln-info">
+    The <code>requests</code> library rejects <code>file://</code>. Python's <code>urllib.request.urlopen()</code>
+    does not. A developer who switches from <code>requests</code> to <code>urllib</code> for "compatibility"
+    silently opens local file read + FTP-bounce attack surface.
+  </div>
+
+  <div class="hint-box">
+    <b>Targets:</b>
+    <code>file:///etc/passwd</code> ·
+    <code>file:///proc/self/environ</code> ·
+    <code>file:///app/.env</code> ·
+    <code>file:///app/app.py</code> ·
+    <code>http://127.0.0.1:5000/latest/meta-data/iam/security-credentials/aegis-station-role</code>
+  </div>
+
+  {% if result %}
+  <pre class="result-block">{{ result | tojson(indent=2) }}</pre>
+  {% endif %}
+
+  <form method="POST" class="lab-form">
+    <label>URL (any protocol urllib supports)</label>
+    <input name="url" value="{{ url_in | default('file:///etc/passwd') }}" class="input-field input-wide">
+    <button type="submit" class="btn btn-danger">Fetch</button>
+  </form>
+</div>
+{% endblock %}

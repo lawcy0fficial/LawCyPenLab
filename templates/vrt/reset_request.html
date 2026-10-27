@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Reset Link Request{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vrt-lab.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-broken-lock.svg') }}" width="40" height="40" alt="">
+  <div>
+    <h1>Password Reset Request <span class="sev p2" style="margin-left:8px;">P2 · Host Header Injection</span></h1>
+    <p>Request a reset link. In a real deployment this link would be emailed to the crew member.</p>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="panel">
+    <h2>Request Reset Link</h2>
+    <form method="post">
+      <label class="mono-dim" style="display:block;font-size:12px;margin-bottom:4px;">Email</label>
+      <input type="text" name="email" placeholder="crew@aegis-station.local" style="width:100%;padding:8px;margin-bottom:12px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);">
+      <button type="submit" class="btn small">Send Reset Link</button>
+    </form>
+    <p class="vrt-cwe" style="margin-top:14px;">Try sending this request with <code>curl -H "Host: evil.example"</code> and watch the generated link below follow it.</p>
+  </div>
+  <div class="panel">
+    <h2>Generated Link</h2>
+    {% if link %}
+      <pre class="code">{{ link }}</pre>
+      <p class="mono-dim" style="margin-top:10px;">Built directly from the request's <code>Host</code> header — nothing fixes it to the real station domain.</p>
+    {% else %}
+      <p class="mono-dim">No request sent yet.</p>
+    {% endif %}
+    <div class="vrt-cwe">CWE-644 · Server Security Misconfiguration — Host header injection</div>
+  </div>
+</div>
+{% endblock %}

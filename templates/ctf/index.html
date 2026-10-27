@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}CTF — Challenge Board{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <h2>🚩 AEGIS CTF — Challenge Board</h2>
+    <div><span class="mono-dim">{{ solved|length }} / {{ total_flags }} solved &nbsp;·&nbsp; {{ total_pts }} pts earned</span></div>
+  </div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:20px">
+    <div class="hint-box" style="flex:1;min-width:200px;margin:0">
+      <b>Submit a flag:</b>
+      <div style="display:flex;gap:8px;margin-top:8px" id="flag-submit-row">
+        <input id="flag-in" class="flag-input" placeholder="AEGIS{...}" style="flex:1">
+        <button onclick="submitFlag()" class="btn">Submit</button>
+      </div>
+      <div id="flag-result" style="margin-top:8px;font-size:.75rem"></div>
+    </div>
+    <div class="hint-box" style="flex:1;min-width:200px;margin:0">
+      <b>Progress:</b>
+      <div style="margin-top:8px;height:8px;background:var(--hairline);border-radius:4px;overflow:hidden">
+        <div style="height:100%;background:linear-gradient(90deg,var(--success),var(--cyan));border-radius:4px;
+             width:{{ ((solved|length / total_flags)*100)|round|int }}%;transition:width 1s var(--ease)"></div>
+      </div>
+      <div style="font-size:.7rem;color:var(--dim);margin-top:4px">{{ ((solved|length / total_flags)*100)|round|int }}% complete</div>
+    </div>
+  </div>
+</div>
+{% for cat, challenges in cats.items() %}
+<div class="panel">
+  <h2>{{ cat }}</h2>
+  <div class="launch-grid" style="--lc-color:var(--cyan)">
+    {% for fid, info, is_solved in challenges %}
+    <div class="flag-card {{ 'solved' if is_solved }}"
+         style="--fc-color:{{ 'var(--success)' if is_solved else ('var(--danger)' if info.pts>=300 else ('var(--amber)' if info.pts>=200 else 'var(--cyan)')) }}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <span class="badge {{ 'success' if is_solved else ('p1' if info.pts>=300 else ('p2' if info.pts>=200 else 'p3')) }}">
+          {{ '✓ SOLVED' if is_solved else (info.pts|string + ' PTS') }}
+        </span>
+        <span class="mono-dim" style="font-size:.6rem">{{ fid }}</span>
+      </div>
+      <div style="font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:4px">{{ info.name }}</div>
+      {% if not is_solved %}
+      <div style="font-size:.69rem;color:var(--dim);margin-top:4px">💡 {{ info.hint }}</div>
+      {% else %}
+      <div style="font-size:.69rem;color:var(--success);margin-top:4px">🏁 {{ info.flag }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+{% block extra_scripts %}
+<script>
+function submitFlag(){
+  var flag=document.getElementById('flag-in').value.trim();
+  var res=document.getElementById('flag-result');
+  if(!flag){res.textContent='Enter a flag first';return;}
+  var fd=new FormData();fd.append('flag',flag);
+  fetch('{{ url_for("ctf_submit") }}',{method:'POST',body:fd})
+    .then(r=>{var ok=r.ok;return r.json().then(d=>({ok,d}));})
+    .then(({ok,d})=>{
+      if(d.status==='correct'){
+        res.style.color='var(--success)';
+        res.textContent='🚩 Correct! +'+d.pts+' pts — '+d.name;
+        setTimeout(()=>location.reload(),1200);
+      } else if(d.status==='already_solved'){
+        res.style.color='var(--amber)';res.textContent='Already solved: '+d.name;
+      } else {
+        res.style.color='var(--danger)';res.textContent='✗ Incorrect flag. Keep trying.';
+      }
+    });
+}
+document.getElementById('flag-in').addEventListener('keydown',function(e){if(e.key==='Enter')submitFlag();});
+</script>
+{% endblock %}
+{% endblock %}

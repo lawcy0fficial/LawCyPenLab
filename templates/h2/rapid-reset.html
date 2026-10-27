@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}HTTP/2 Rapid Reset — CVE-2023-44487{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p2">P2</span>
+    <h2>HTTP/2 Rapid Reset — CVE-2023-44487</h2>
+    <div><span class="mono-dim">HEADERS frame + immediate RST_STREAM · Bypasses flow control · 201M rps peak</span></div>
+  </div>
+  <div class="vuln-info">
+    Each HTTP/2 HEADERS frame triggers server-side stream processing. An immediate RST_STREAM cancels the response
+    but <b>not the work already done</b>. With thousands of HEADERS+RST per second, the server exhausts CPU/memory
+    while sending zero responses — completely invisible to standard rate limiters counting HTTP responses.
+    <br><br><b>Real-world impact:</b> Cloudflare, Google, and AWS all reported record-breaking DDoS attacks in 2023
+    using this technique before patches were deployed.
+  </div>
+</div>
+{% if result %}
+<div class="panel">
+  <h2>Simulation Result</h2>
+  <pre class="result-block">{{ result | tojson(indent=2) }}</pre>
+</div>
+{% endif %}
+<div class="panel">
+  <h2>Configure Simulation</h2>
+  <form method="POST" class="lab-form">
+    <label>Simulated Stream Count (HEADERS frames)</label>
+    <input type="number" name="streams" value="1000" min="100" max="50000" class="input-field">
+    <label>Streams per Second (attack rate)</label>
+    <input type="number" name="rate" value="5000" min="100" max="50000" class="input-field">
+    <button type="submit" class="btn btn-danger">Run Simulation</button>
+  </form>
+</div>
+{% endblock %}

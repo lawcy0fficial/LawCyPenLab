@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Crew Credits{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v19.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-credits.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">Crew Credit System</h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">Station economy — transfer credits between crew accounts.</p>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div>
+    <div class="wallet-card" style="margin-bottom:16px;">
+      <div class="wallet-label">ACCOUNT</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--dim);margin-top:4px;">{{ account.acct }} · {{ username }}</div>
+      <div class="wallet-balance">{{ account.balance | round(2) }}</div>
+      <div class="wallet-label">CREDITS AVAILABLE</div>
+      <div class="wallet-acct">
+        Routing: AEGIS-CREDIT-NETWORK · Node: STATION-PRIMARY
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Transfer Credits</h2>
+      <form id="transfer-form" method="post" action="{{ url_for('credits_transfer') }}" style="display:flex;flex-direction:column;gap:10px;">
+        <label style="font-size:12px;color:var(--dim);">To (username)</label>
+        <input type="text" name="to" placeholder="admin" style="padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);">
+        <label style="font-size:12px;color:var(--dim);">Amount (credits)</label>
+        <input type="number" name="amount" value="100" min="0.01" step="0.01" style="padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);">
+        <button type="submit" class="btn small">Transfer →</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>CSRF Demo <span class="sev p2" style="margin-left:6px;">P2</span></h2>
+    <p style="font-size:13px;color:var(--dim);">The transfer endpoint has no CSRF token, no SameSite cookie policy, and no Origin check. A page on any domain can silently POST to it with your session cookie attached.</p>
+    <p style="font-size:12px;color:var(--dim);">Click below to simulate an attacker's page making a cross-origin transfer on your behalf:</p>
+    <button class="btn small" onclick="csrfTransfer()" style="margin-bottom:12px;">Simulate CSRF Attack →</button>
+    <pre class="code" id="csrf-out" style="display:none;"></pre>
+    <div class="csrf-note">
+      <b>Impact:</b> Any website you visit can drain your credits without your knowledge as long as you have an active session.
+    </div>
+    <div style="margin-top:14px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-352 · Cross-Site Request Forgery<br>Fix: SameSite=Strict cookie + CSRF token</div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v19.js') }}"></script>
+<script>
+async function csrfTransfer() {
+  const out = document.getElementById('csrf-out');
+  out.style.display='block'; out.textContent='Sending cross-origin transfer…';
+  // Simulates what an attacker page (different origin) would POST
+  const r = await fetch('/credits/transfer', {
+    method:'POST',
+    headers:{'Content-Type':'application/x-www-form-urlencoded','X-Requested-With':'XMLHttpRequest'},
+    credentials:'include',   // attaches session cookie — same as a real CSRF attack
+    body:'to=admin&amount=1'
+  });
+  out.textContent = `HTTP ${r.status}\n\n` + JSON.stringify(await r.json(), null, 2);
+}
+</script>
+{% endblock %}

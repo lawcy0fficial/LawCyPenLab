@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Security Headers Audit{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p3">P3</span>
+    <h2>Security Headers Audit — {{ grade }} Grade</h2>
+    <p class="mono-dim">CWE-693 · {{ missing }} of {{ payload.total_checked }} security headers missing</p>
+  </div>
+  <div class="vuln-info">
+    Every missing header is a standalone, documentable finding. This endpoint audits the headers
+    <b>this app actually sends</b> and grades the result. All 8 are absent.
+  </div>
+
+  <table class="data-table">
+    <tr><th>Header</th><th>Impact</th><th>Recommended Value</th></tr>
+    {% for name, info in checks.items() %}
+    <tr>
+      <td><code>{{ name }}</code></td>
+      <td><span class="badge {{ 'p1' if 'P1' in info.impact else 'p2' if 'P2' in info.impact else 'p3' }}">
+        {{ info.impact.split('—')[0].strip() }}</span>
+        {{ info.impact.split('—')[1].strip() if '—' in info.impact else '' }}
+      </td>
+      <td><code>{{ info.sample }}</code></td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <div class="hint-box">
+    <b>Flask remediation snippet:</b>
+    <pre class="result-block">{{ payload.flask_fix }}</pre>
+    Add this <code>@app.after_request</code> handler to <code>app.py</code> to fix all 8 findings at once.
+  </div>
+</div>
+{% endblock %}

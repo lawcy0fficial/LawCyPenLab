@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}WebSocket Feed{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v23.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-websocket.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">WebSocket / SSE Feed <span class="sev p2" style="margin-left:8px;">P2 · CSWSH</span></h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">Unauthenticated live station feed — no Origin check, no session required, wildcard CORS.</p>
+  </div>
+</div>
+
+<div class="grid grid-2" style="gap:18px;align-items:start;">
+  <!-- Live feed terminal -->
+  <div>
+    <div class="ws-terminal">
+      <div class="ws-titlebar">
+        <div class="ws-dot disconnected" id="ws-dot"></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.5);">ws://aegis-station.local/ws/feed</span>
+        <span class="sev p2" style="margin-left:auto;font-size:9px;">NO AUTH</span>
+      </div>
+      <div class="ws-feed" id="ws-feed">
+        <div class="ws-msg system"><span class="ws-ts">--:--:--</span><span class="ws-dir in">←</span><span class="ws-body">Terminal ready. Click Connect to receive station feed.</span></div>
+      </div>
+      <div style="padding:8px 14px;border-top:1px solid rgba(79,216,224,.15);display:flex;gap:8px;align-items:center;">
+        <button id="ws-btn" class="btn small" onclick="connectWsFeed()">Connect</button>
+        <button class="btn small secondary" onclick="document.getElementById('ws-feed').innerHTML=''">Clear</button>
+        <span style="font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-left:auto;">
+          <span style="color:var(--danger);">RED</span> = sensitive data in stream
+        </span>
+      </div>
+    </div>
+
+    <!-- curl proof -->
+    <div style="margin-top:12px;padding:12px 14px;background:var(--void);border:1px solid var(--hairline);border-radius:var(--radius);">
+      <div style="font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-bottom:6px;">NO SESSION REQUIRED — test with curl:</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#a8ff78;">curl -N http://aegis-station.local/ws/feed</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#a8ff78;margin-top:3px;">curl -N -H "Origin: https://evil.example" http://aegis-station.local/ws/feed</div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <!-- CSWSH explanation -->
+    <div class="panel">
+      <h2 style="font-size:13px;margin-bottom:10px;">Cross-Site WebSocket Hijacking</h2>
+      <p style="font-size:13px;color:var(--dim);">Unlike CORS-restricted HTTP requests, SSE and WebSocket connections attach cookies automatically and bypass same-origin policy at the connection level — if the server doesn't validate the <code>Origin</code> header.</p>
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
+        <div class="vuln-callout">
+          <span class="sev p2" style="flex:none;align-self:flex-start;">P2</span>
+          <p>No <code>Origin</code> validation — any domain can subscribe to the feed with victim's cookies, receiving the full auth token stream and internal comms.</p>
+        </div>
+        <div class="vuln-callout">
+          <span class="sev p2" style="flex:none;align-self:flex-start;">P2</span>
+          <p><code>Access-Control-Allow-Origin: *</code> set on an authenticated feed — makes CORS-based data theft trivial from any browser context.</p>
+        </div>
+      </div>
+      <a href="{{ url_for('ws_cswsh_demo') }}" class="btn small" style="margin-top:12px;">CSWSH Attack Demo →</a>
+      <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-346 · Origin Validation Error<br>CWE-306 · Missing Authentication for Critical Function</div>
+    </div>
+
+    <!-- Sensitive data in stream -->
+    <div class="panel">
+      <h2 style="font-size:13px;margin-bottom:10px;">Data Exposed in Unauthenticated Feed</h2>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;font-family:'JetBrains Mono',monospace;">
+        {% for item in [
+          ('override_key=NX-7734-OMEGA','Station override key'),
+          ('session_token=eyJ0eXAi…','Partial JWT session token'),
+          ('auth code DOCK-7741','Docking authorisation code'),
+          ('classification=ALPHA','Restricted crew note'),
+          ('ip=10.0.0.1','Internal IP addresses'),
+        ] %}
+        <div style="display:flex;gap:10px;padding:6px 10px;border:1px solid rgba(255,92,92,.2);border-radius:var(--radius);background:rgba(255,92,92,.04);">
+          <code style="flex:1;color:var(--danger);">{{ item[0] }}</code>
+          <span style="color:var(--dim);">{{ item[1] }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v23.js') }}"></script>
+{% endblock %}

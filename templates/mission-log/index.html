@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Mission Log{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v19.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-mission-log.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">Mission Flight Recorder</h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">Archived mission logs — classified by access tier. Viewer pulls log by filename.</p>
+  </div>
+</div>
+
+<div class="grid grid-2" style="gap:20px;">
+  <div>
+    <h2 style="margin-bottom:12px;">Available Logs</h2>
+    {% for log in logs %}
+    <a href="{{ url_for('mission_log_view', log=log.file) }}" class="log-file-card">
+      <img src="{{ url_for('static', filename='img/svg/icon-mission-log.svg') }}" width="28" height="28" alt="">
+      <div style="flex:1;">
+        <div class="log-name">{{ log.label }}</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:2px;">{{ log.date }}</div>
+      </div>
+      <span class="log-class {{ 'officer' if log.classification == 'OFFICER+' else 'crew' }}">{{ log.classification }}</span>
+    </a>
+    {% endfor %}
+
+    <div class="lfi-demo">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--danger);letter-spacing:.08em;margin-bottom:6px;">P1 · PATH TRAVERSAL / LFI</div>
+      <p style="margin:0 0 10px;font-size:12px;color:var(--dim);">The <code>?log=</code> parameter is passed directly to <code>os.path.join(LOG_DIR, log)</code> — no realpath check. Try:</p>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <a href="{{ url_for('mission_log_view', log='../app.py') }}" class="btn small" style="max-width:fit-content;">../app.py</a>
+        <a href="{{ url_for('mission_log_view', log='../../etc/passwd') }}" class="btn small secondary" style="max-width:fit-content;">../../etc/passwd</a>
+        <a href="{{ url_for('mission_log_view', log='../seed.py') }}" class="btn small secondary" style="max-width:fit-content;">../seed.py</a>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--dim);">Classification tier is also never enforced — CREW accounts can read OFFICER+ logs by filename.</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Log Viewer</h2>
+    <form method="get" action="{{ url_for('mission_log_view') }}" style="display:flex;gap:8px;margin-bottom:12px;">
+      <input type="text" name="log" placeholder="mission_alpha.txt  or  ../app.py" style="flex:1;padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);">
+      <button type="submit" class="btn small">View</button>
+    </form>
+    <p style="font-size:12px;color:var(--dim);">Select a log above or type a filename (including traversal sequences) to read any file on the server the process has access to.</p>
+    <div style="margin-top:14px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--dim);">CWE-22 · Path Traversal</div>
+  </div>
+</div>
+{% endblock %}

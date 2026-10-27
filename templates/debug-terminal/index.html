@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}Debug Terminal{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v20.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-terminal.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">Debug Terminal <span class="sev p1" style="margin-left:8px;">P1 · RCE</span></h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">Station diagnostic console — <code>shell=True</code>, no allow-list. Every command runs as the app user.</p>
+  </div>
+</div>
+
+<div class="grid grid-2" style="align-items:start;gap:18px;">
+  <div>
+    <div class="term-shell">
+      <div class="term-titlebar">
+        <div class="term-dot" style="background:#FF5C5C;"></div>
+        <div class="term-dot" style="background:#F5A623;"></div>
+        <div class="term-dot" style="background:#4FD8E0;"></div>
+        <span style="margin-left:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,0.5);">root@aegis-station — debug-shell</span>
+        <span class="sev p1" style="margin-left:auto;font-size:9px;">COMMAND INJECTION</span>
+      </div>
+      <div class="term-output" id="term-output">
+        <div class="dim">AEGIS STATION DEBUG TERMINAL v4.2.1</div>
+        <div class="dim">WARNING: This console runs with station process privileges.</div>
+        <div class="dim">Type 'help' for available commands.</div>
+        <div style="margin-top:6px;"></div>
+      </div>
+      <div class="term-input-row">
+        <span class="term-prompt-sym">root@aegis:~#&nbsp;</span>
+        <input class="term-input" id="term-input" type="text" placeholder="id" autocomplete="off" autocorrect="off" spellcheck="false">
+        <span class="term-cursor"></span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+      {% for cmd in ['id', 'whoami', 'hostname', 'pwd', 'ls -la', 'env | grep -i secret', 'cat /etc/passwd', 'ps aux', 'cat .env'] %}
+      <button class="btn small secondary" style="font-family:\"JetBrains Mono\",monospace;font-size:11px;" onclick="quickCmd('{{ cmd }}')">{{ cmd }}</button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div class="panel">
+      <h2>Environment Variables <span class="sev p2" style="margin-left:6px;">P2</span></h2>
+      <p style="font-size:12px;color:var(--dim);">Full <code>os.environ</code> dump — includes AWS keys, JWT secrets, DB passwords, SMTP credentials.</p>
+      <button class="btn small" onclick="fetchEnv()">Fetch /debug-terminal/env →</button>
+      <pre class="code" id="env-out" style="margin-top:10px;display:none;max-height:200px;overflow-y:auto;font-size:11px;"></pre>
+      <div style="margin-top:8px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-215 · Sensitive Environment Variable Disclosure</div>
+    </div>
+
+    <div class="panel">
+      <h2>Exposed Sensitive Files <span class="sev p2" style="margin-left:6px;">P2</span></h2>
+      <p style="font-size:12px;color:var(--dim);">Server-guessable URLs serve secrets directly over HTTP.</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
+        <a href="/.env" class="btn small" target="_blank">GET /.env →</a>
+        <a href="/backup.sql" class="btn small secondary" target="_blank">GET /backup.sql →</a>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-538 · File and Directory Information Exposure</div>
+    </div>
+
+    <div class="panel">
+      <h2>Prototype Pollution <span class="sev p2" style="margin-left:6px;">P2 · Client-side</span></h2>
+      <p style="font-size:12px;color:var(--dim);">A recursive merge without blocking <code>__proto__</code> poisons <code>Object.prototype</code> — every subsequently created plain object inherits the attacker's properties.</p>
+      <button class="btn small" onclick="runProtoPollution()">Run demo →</button>
+      <pre class="code" id="proto-out" style="margin-top:10px;display:none;font-size:11px;"></pre>
+      <div style="margin-top:8px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-1321 · Prototype Pollution</div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v20.js') }}"></script>
+<script>
+function quickCmd(cmd) {
+  const inp = document.getElementById('term-input');
+  inp.value = cmd;
+  inp.focus();
+  inp.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+}
+async function fetchEnv() {
+  const out = document.getElementById('env-out');
+  out.style.display = 'block'; out.textContent = 'Loading…';
+  const r = await fetch('/debug-terminal/env');
+  const d = await r.json();
+  out.textContent = `HTTP ${r.status}  (${d.count} variables)\n\n` + JSON.stringify(d.env, null, 2);
+}
+</script>
+{% endblock %}

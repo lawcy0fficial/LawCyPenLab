@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Alert Console{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v19.css') }}">
+{% endblock %}
+{% block content %}
+<div class="alert-console-hdr">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <img src="{{ url_for('static', filename='img/svg/icon-alerts.svg') }}" width="40" height="40" alt="">
+    <h1 style="margin:0;">Alert Console</h1>
+    <span class="alert-badge">{{ alerts | selectattr('dismissed','equalto',False) | list | length }}</span>
+  </div>
+  <form method="get" action="{{ url_for('alerts_search') }}" style="display:flex;gap:8px;">
+    <input type="text" name="q" placeholder="Search alerts…" style="padding:7px 12px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);">
+    <button type="submit" class="btn small">Search</button>
+  </form>
+</div>
+
+{% for a in alerts %}
+<div class="alert-row {{ 'dismissed' if a.dismissed }}" id="alert-{{ a.id }}">
+  <span class="alert-sev {{ 'crit' if a.sev=='CRIT' else 'high' if a.sev=='HIGH' else 'med' }}">{{ a.sev }}</span>
+  <span class="alert-msg">{{ a.msg }}</span>
+  <span class="alert-ts">{{ a.ts }}</span>
+  {% if not a.dismissed %}
+  <button class="alert-dismiss" data-id="{{ a.id }}">Dismiss</button>
+  {% else %}
+  <span style="font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">dismissed</span>
+  {% endif %}
+</div>
+{% endfor %}
+
+<div class="vuln-callout" style="margin-top:20px;">
+  <span class="sev p3" style="flex:none;align-self:flex-start;margin-top:1px;">P3 · Method Override</span>
+  <p>The dismiss button posts with <code>X-HTTP-Method-Override: DELETE</code>. The route only exposes POST, yet processes the override header to perform a deletion that would normally require the DELETE verb and an admin RBAC check — which is never enforced here.</p>
+</div>
+<div class="vuln-callout">
+  <span class="sev p2" style="flex:none;align-self:flex-start;margin-top:1px;">P2 · Reflected XSS</span>
+  <p>The <a href="{{ url_for('alerts_search') }}?q=&lt;script&gt;alert(1)&lt;/script&gt;" style="color:var(--amber);">search endpoint</a> reflects the <code>?q=</code> param with <code>|safe</code> — any script tag executes. <a href="{{ url_for('alerts_search', q='<img src=x onerror=alert(document.cookie)>') }}" style="color:var(--cyan);">Try XSS →</a></p>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v19.js') }}"></script>
+{% endblock %}

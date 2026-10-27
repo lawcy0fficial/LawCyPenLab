@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% block title %}Station Map{% endblock %}
+{% block extra_head %}
+<style>
+.map-shell{display:grid;grid-template-columns:1fr 280px;gap:18px;}
+@media(max-width:900px){.map-shell{grid-template-columns:1fr;}}
+.map-sidebar-panels{display:flex;flex-direction:column;gap:10px;}
+.map-telemetry-row{display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid var(--hairline);}
+.map-telemetry-row:last-child{border-bottom:none;}
+.map-telemetry-label{color:var(--dim);}
+.map-telemetry-val{font-family:'JetBrains Mono',monospace;font-weight:700;}
+.map-telemetry-val.ok{color:var(--cyan);}
+.map-telemetry-val.warn{color:var(--amber);}
+.map-telemetry-val.crit{color:var(--danger);}
+</style>
+{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+  <h1 style="margin:0;">AEGIS Station — Live Schematic</h1>
+  <span class="map-status warning" style="margin-left:auto;">2 WARNINGS ACTIVE</span>
+</div>
+
+<div class="map-shell">
+  <div>
+    <div class="map-wrap">
+      <img src="{{ url_for('static', filename='img/svg/station-map-full.svg') }}"
+           alt="AEGIS Station schematic" style="width:100%;height:auto;display:block;">
+    </div>
+    <div class="map-legend">
+      <div class="map-legend-item"><div class="map-legend-dot" style="background:#4FD8E0;"></div>Nominal</div>
+      <div class="map-legend-item"><div class="map-legend-dot" style="background:#F5A623;animation:pulse-amber 1.4s infinite;"></div>Warning</div>
+      <div class="map-legend-item"><div class="map-legend-dot" style="background:#FF5C5C;animation:pulse-red 1s infinite;"></div>Critical</div>
+    </div>
+  </div>
+
+  <div class="map-sidebar-panels">
+    <div class="panel">
+      <h2 style="font-size:13px;margin-bottom:12px;">Live Telemetry</h2>
+      <div class="map-telemetry-row"><span class="map-telemetry-label">O₂ Level</span><span class="map-telemetry-val ok">98.4 %</span></div>
+      <div class="map-telemetry-row"><span class="map-telemetry-label">Hull Pressure</span><span class="map-telemetry-val ok">14.6 PSI</span></div>
+      <div class="map-telemetry-row"><span class="map-telemetry-label">Orbit Altitude</span><span class="map-telemetry-val ok">412 km</span></div>
+      <div class="map-telemetry-row"><span class="map-telemetry-label">Core Temp</span><span class="map-telemetry-val crit">9 182 °C</span></div>
+      <div class="map-telemetry-row"><span class="map-telemetry-label">Sci-Lab</span><span class="map-telemetry-val warn">QUARANTINE</span></div>
+      <div class="map-telemetry-row"><span class="map-telemetry-label">Crew Count</span><span class="map-telemetry-val ok">6 / 8</span></div>
+      <div class="map-telemetry-row"><span class="map-telemetry-label">Solar Panels</span><span class="map-telemetry-val ok">NOMINAL</span></div>
+      <div class="map-telemetry-row"><span class="map-telemetry-label">Docking Bay 1</span><span class="map-telemetry-val ok">CLEAR</span></div>
+    </div>
+
+    <div class="panel" id="map-detail">
+      <h2 style="font-size:13px;margin-bottom:8px;">Module Status</h2>
+      <table style="width:100%;font-size:12px;border-collapse:collapse;">
+        <tr><td style="padding:4px 0;color:var(--dim);">Core</td><td><span class="map-status nominal">NOMINAL</span></td></tr>
+        <tr><td style="padding:4px 0;color:var(--dim);">Reactor</td><td><span class="map-status critical">CRITICAL ⚠</span></td></tr>
+        <tr><td style="padding:4px 0;color:var(--dim);">Life Support</td><td><span class="map-status nominal">NOMINAL</span></td></tr>
+        <tr><td style="padding:4px 0;color:var(--dim);">Crew Quarters</td><td><span class="map-status nominal">NOMINAL</span></td></tr>
+        <tr><td style="padding:4px 0;color:var(--dim);">Comms Hub</td><td><span class="map-status nominal">NOMINAL</span></td></tr>
+        <tr><td style="padding:4px 0;color:var(--dim);">Cargo Bay</td><td><span class="map-status nominal">NOMINAL</span></td></tr>
+        <tr><td style="padding:4px 0;color:var(--dim);">Docking Ring</td><td><span class="map-status nominal">NOMINAL</span></td></tr>
+        <tr><td style="padding:4px 0;color:var(--dim);">Science Lab</td><td><span class="map-status warning">WARNING ⚠</span></td></tr>
+        <tr><td style="padding:4px 0;color:var(--dim);">Medical Bay</td><td><span class="map-status nominal">NOMINAL</span></td></tr>
+      </table>
+    </div>
+
+    <div class="panel">
+      <h2 style="font-size:13px;margin-bottom:10px;">Active Findings</h2>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;">
+          <a href="{{ url_for('vrt_ssrf') }}" style="color:var(--text);text-decoration:none;">Reactor SSRF target</a>
+          <span class="sev p1">P1</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;">
+          <a href="{{ url_for('inventory_import') }}" style="color:var(--text);text-decoration:none;">Sci-Lab Pickle RCE</a>
+          <span class="sev p1">P1</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;">
+          <a href="{{ url_for('mission_log_index') }}" style="color:var(--text);text-decoration:none;">Mission Log LFI</a>
+          <span class="sev p1">P1</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;">
+          <a href="{{ url_for('auth_2fa') }}" style="color:var(--text);text-decoration:none;">2FA Session Bypass</a>
+          <span class="sev p1">P1</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;">
+          <a href="{{ url_for('api_portal') }}" style="color:var(--text);text-decoration:none;">Comms CRLF Injection</a>
+          <span class="sev p2">P2</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;">
+          <a href="{{ url_for('credits_index') }}" style="color:var(--text);text-decoration:none;">Credits CSRF Transfer</a>
+          <span class="sev p2">P2</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;">
+          <a href="{{ url_for('alerts_search') }}" style="color:var(--text);text-decoration:none;">Alert Search Refl. XSS</a>
+          <span class="sev p2">P2</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;">
+          <a href="{{ url_for('profile_change_email') }}" style="color:var(--text);text-decoration:none;">Email Change ATO</a>
+          <span class="sev p2">P2</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;">
+          <a href="{{ url_for('alerts_index') }}" style="color:var(--text);text-decoration:none;">Alert Method Override</a>
+          <span class="sev p3">P3</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

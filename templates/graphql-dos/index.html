@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}GraphQL DoS + BOPLA{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v23.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-graphql-dos.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">GraphQL DoS &amp; BOPLA <span class="sev p2" style="margin-left:8px;">P2 · CWE-400/285</span></h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">Unlimited query depth → server-side DoS · BOPLA: object-level auth correct but field-level absent.</p>
+  </div>
+</div>
+
+<div class="grid grid-2" style="gap:18px;margin-bottom:20px;">
+  <!-- Depth DoS -->
+  <div class="panel">
+    <h2 style="font-size:13px;margin-bottom:10px;">Query Depth DoS <span class="sev p2" style="margin-left:6px;">P2</span></h2>
+    <p style="font-size:12px;color:var(--dim);">No <code>maxDepth</code> set in the GraphQL schema. A query nested 30 levels deep forces exponential server-side work.</p>
+
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px;">Nesting depth</label>
+      <input id="depth-slider" type="range" min="1" max="25" value="3" oninput="updateDepthVis(this.value)" style="width:100%;accent-color:var(--cyan);">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:4px;">
+        <span>1 (safe)</span><span id="depth-cur">3</span><span>25 (DoS)</span>
+      </div>
+    </div>
+
+    <div class="depth-meter">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);" id="depth-label">depth: 3</span>
+      <div class="depth-track">
+        <div class="depth-fill" id="depth-fill" style="width:12%;background:var(--cyan);"></div>
+      </div>
+    </div>
+
+    <div class="gql-depth-vis" id="depth-vis" style="margin-top:12px;max-height:140px;overflow-y:auto;font-size:10px;"></div>
+
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+      <button class="btn small" onclick="testGraphqlDepth(parseInt(document.getElementById('depth-slider').value))">Send Query →</button>
+      <button class="btn small secondary" onclick="document.getElementById('depth-slider').value=3;updateDepthVis(3)">Reset (safe)</button>
+      <button class="btn small secondary" onclick="document.getElementById('depth-slider').value=20;updateDepthVis(20);testGraphqlDepth(20)">DoS payload (depth=20)</button>
+    </div>
+    <pre class="code" id="gql-dos-out" style="margin-top:12px;display:none;font-size:11px;max-height:160px;overflow-y:auto;"></pre>
+    <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-400 · Uncontrolled Resource Consumption<br>Fix: set <code>maxDepth: 5</code> in GraphQL schema options</div>
+  </div>
+
+  <!-- BOPLA -->
+  <div class="panel">
+    <h2 style="font-size:13px;margin-bottom:10px;">BOPLA — Broken Object Property Level Authorization <span class="sev p2" style="margin-left:6px;">P2</span></h2>
+    <p style="font-size:12px;color:var(--dim);">BOLA (object-level: can I access this record?) is correctly enforced. But property-level (which fields can I read/write?) is absent — any crew member can read sensitive fields and elevate their own role.</p>
+
+    <h3 style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--dim);margin:14px 0 8px;letter-spacing:.06em;">FIELD EXPOSURE (GET /api/v7/crew/&lt;uid&gt;)</h3>
+    <div style="border:1px solid var(--hairline);border-radius:var(--radius);overflow:hidden;margin-bottom:14px;">
+      {% for field, access, note in [
+        ('username','ok','Public — expected'),
+        ('email','ok','Public — expected'),
+        ('role','ok','Public — expected'),
+        ('password_hash','should-block','Only DevOps should ever read this'),
+        ('api_token','should-block','Equivalent to a private key — crew should not see'),
+        ('is_admin','should-block','Internal boolean — crew should not see'),
+      ] %}
+      <div class="bopla-field">
+        <span class="field-name">{{ field }}</span>
+        <span class="field-access {{ access }}">{{ 'EXPOSED ⚠' if access == 'should-block' else 'OK' }}</span>
+        <span style="font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-left:8px;">{{ note }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <h3 style="font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--dim);margin:0 0 8px;letter-spacing:.06em;">FIELD WRITABILITY (PATCH /api/v7/crew/&lt;uid&gt;)</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <button class="btn small" onclick="testBopla({{ session.user_id if session.user_id else 6 }}, null)">GET my record →</button>
+      <button class="btn small secondary" onclick="testBopla({{ session.user_id if session.user_id else 6 }}, {'role':'admin','is_admin':1})">PATCH: escalate to admin →</button>
+      <button class="btn small secondary" onclick="testBopla({{ session.user_id if session.user_id else 6 }}, {'api_token':'FORGED-TOKEN-123'})">PATCH: replace api_token →</button>
+    </div>
+    <pre class="code" id="bopla-out" style="display:none;font-size:11px;max-height:180px;overflow-y:auto;"></pre>
+    <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-285 · Improper Authorization<br>Fix: explicit field-level allow-list per role in serializer</div>
+  </div>
+</div>
+
+<!-- Comparison: BOLA vs BOPLA -->
+<div class="panel">
+  <h2 style="font-size:13px;margin-bottom:14px;">BOLA vs BOPLA — Side by Side</h2>
+  <div class="grid grid-2" style="gap:14px;">
+    <div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--cyan);margin-bottom:8px;">BOLA — FIXED HERE</div>
+      <pre class="code" style="font-size:11px;"># Correct: user can only access OWN record
+GET /api/v7/crew/3  ← guest (uid=6) → 403
+GET /api/v7/crew/6  ← guest (uid=6) → 200 ✓
+
+# Object ownership verified server-side</pre>
+    </div>
+    <div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--danger);margin-bottom:8px;">BOPLA — STILL VULNERABLE</div>
+      <pre class="code" style="font-size:11px;"># Wrong: ALL fields returned regardless of role
+GET /api/v7/crew/6 → 200
+{
+  "username":      "guest",
+  "password_hash": "084e03...",  ← ⚠
+  "api_token":     "tk_c3d4...", ← ⚠
+  "is_admin":      0              ← ⚠
+}</pre>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v23.js') }}"></script>
+<script>
+function updateDepthVis(d) {
+  d = parseInt(d);
+  document.getElementById('depth-cur').textContent = d;
+  document.getElementById('depth-label').textContent = `depth: ${d}`;
+  const fill = document.getElementById('depth-fill');
+  const pct  = Math.min(100, d * 4);
+  fill.style.width = pct + '%';
+  fill.style.background = d > 15 ? 'var(--danger)' : d > 8 ? 'var(--amber)' : 'var(--cyan)';
+  // build nested query preview
+  const vis = document.getElementById('depth-vis');
+  let q = ''; const indent = '  ';
+  for (let i=0; i<d; i++) q += `${indent.repeat(i)}<span class="d-brace">{</span> <span class="d-type">crew</span>\n`;
+  q += `${indent.repeat(d)}<span class="d-brace">{</span> <span class="d-field">id username role</span> <span class="${d>10?'d-danger':'d-brace'}">}</span>${d>15?' <span class="d-danger">← DoS threshold</span>':''}\n`;
+  for (let i=d-1; i>=0; i--) q += `${indent.repeat(i)}<span class="d-brace">}</span>\n`;
+  vis.innerHTML = q;
+}
+document.addEventListener('DOMContentLoaded', () => updateDepthVis(3));
+</script>
+{% endblock %}

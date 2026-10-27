@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% block title %}Maintenance Scheduler{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v20.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-scheduler.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">Maintenance Scheduler</h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">Task assignments, deadlines, and completion tracking. Three vuln classes built in.</p>
+  </div>
+</div>
+
+<div class="grid grid-2" style="gap:18px;align-items:start;">
+  <div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h2 style="margin:0;">Active Tasks</h2>
+      <button class="btn small" onclick="document.getElementById('add-task-form').style.display='block'">+ Add Task</button>
+    </div>
+
+    {% for t in tasks %}
+    <div class="task-row">
+      <div class="task-priority {{ 'high' if t.priority=='high' else 'med' if t.priority=='med' else 'low' }}"></div>
+      <div style="flex:1;">
+        <div style="font-size:13px;{{ 'text-decoration:line-through;color:var(--dim)' if t.done }}">{{ t.title }}</div>
+        <div style="font-size:11px;color:var(--dim);margin-top:2px;font-family:'JetBrains Mono',monospace;">{{ t.assignee }} · due {{ t.due }}</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <a href="{{ url_for('scheduler_task', tid=t.id) }}" class="btn small secondary" target="_blank">IDOR →</a>
+        {% if not t.done %}
+        <button class="btn small" onclick="raceComplete({{ t.id }})">Complete</button>
+        {% else %}
+        <span style="font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">done</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+    <div id="add-task-form" style="display:none;margin-top:14px;" class="panel">
+      <h2>Add Task</h2>
+      <form method="post" action="{{ url_for('scheduler_add') }}" style="display:flex;flex-direction:column;gap:8px;">
+        <input type="text" name="title" placeholder="Task title" style="padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);">
+        <input type="text" name="assignee" placeholder="Assignee (username)" style="padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);">
+        <input type="date" name="due" style="padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);">
+        <select name="priority" style="padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);">
+          <option value="high">High</option><option value="med">Medium</option><option value="low">Low</option>
+        </select>
+        <button type="submit" class="btn small">Add →</button>
+      </form>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div class="panel">
+      <h2>Blind SQLi — ORDER BY <span class="sev p1" style="margin-left:6px;">P1</span></h2>
+      <p style="font-size:12px;color:var(--dim);">The <code>?priority=</code> param is injected into a raw <code>ORDER BY</code> clause. Use SQLite's <code>randomblob()</code> for time-based exfiltration.</p>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <input id="sqli-input" type="text" value="CASE WHEN (SELECT 1)=1 THEN randomblob(5000000) ELSE id END" style="flex:1;padding:7px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:11px;">
+        <button class="btn small" onclick="testSqli()">Inject →</button>
+      </div>
+      <pre class="code" id="sqli-out" style="margin-top:10px;display:none;max-height:140px;overflow-y:auto;font-size:11px;"></pre>
+      <div style="margin-top:8px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-89 · Time-Based Blind SQL Injection</div>
+    </div>
+
+    <div class="panel">
+      <h2>IDOR on Tasks <span class="sev p2" style="margin-left:6px;">P2</span></h2>
+      <p style="font-size:12px;color:var(--dim);">Click any task ID below — no ownership check means any crew member can read any assignment including private notes.</p>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+        {% for t in tasks %}
+        <a href="{{ url_for('scheduler_task', tid=t.id) }}" class="btn small secondary" target="_blank">Task #{{ t.id }}</a>
+        {% endfor %}
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-639 · IDOR — no ownership enforcement</div>
+    </div>
+
+    <div class="panel">
+      <h2>Race Condition <span class="sev p3" style="margin-left:6px;">P3 · TOCTOU</span></h2>
+      <p style="font-size:12px;color:var(--dim);">Check-then-set is non-atomic with a 50ms sleep between them. Send two concurrent requests to complete a task twice — triggering double payouts or duplicate actions downstream.</p>
+      <pre class="code" id="race-out" style="display:none;font-size:11px;max-height:120px;overflow-y:auto;"></pre>
+      <button class="btn small" style="margin-top:10px;" onclick="raceDemo()">Fire 2 concurrent POSTs →</button>
+      <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-367 · TOCTOU Race Condition</div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v20.js') }}"></script>
+<script>
+async function testSqli() {
+  const v = document.getElementById('sqli-input').value;
+  const out = document.getElementById('sqli-out');
+  out.style.display='block'; out.textContent='Sending…';
+  const t0 = performance.now();
+  const r = await fetch('/scheduler/tasks?priority='+encodeURIComponent(v));
+  const ms = Math.round(performance.now()-t0);
+  const d = await r.json();
+  out.textContent = `HTTP ${r.status}  (${ms} ms server-side)\n\n` + JSON.stringify(d, null, 2);
+}
+async function raceComplete(tid) {
+  const r = await fetch(`/scheduler/task/${tid}/complete`, {method:'POST'});
+  const d = await r.json();
+  alert(JSON.stringify(d));
+}
+async function raceDemo() {
+  // Find first incomplete task
+  const tasks = {{ tasks | tojson }};
+  const t = tasks.find(x => !x.done);
+  if (!t) { alert('All tasks are already done — restart the server to reset.'); return; }
+  const out = document.getElementById('race-out');
+  out.style.display='block'; out.textContent=`Firing 2 concurrent POSTs to /scheduler/task/${t.id}/complete…\n`;
+  const [r1,r2] = await Promise.all([
+    fetch(`/scheduler/task/${t.id}/complete`,{method:'POST'}),
+    fetch(`/scheduler/task/${t.id}/complete`,{method:'POST'})
+  ]);
+  const [d1,d2] = await Promise.all([r1.json(), r2.json()]);
+  out.textContent += `Request 1: HTTP ${r1.status} → ${JSON.stringify(d1)}\n`;
+  out.textContent += `Request 2: HTTP ${r2.status} → ${JSON.stringify(d2)}\n`;
+  if (r1.status===200 && r2.status===200)
+    out.textContent += '\n✓ RACE WON — both requests completed successfully (double-completion)';
+}
+</script>
+{% endblock %}

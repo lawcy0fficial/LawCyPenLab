@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}API Search Demo{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v19.css') }}">
+{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+  <a href="{{ url_for('api_portal') }}" class="btn small secondary">← API Portal</a>
+  <h1 style="margin:0;">JSON Query API <span class="sev p2" style="margin-left:8px;">P2 · Operator Injection</span></h1>
+</div>
+<div class="grid grid-2">
+  <div class="panel">
+    <h2>Query Builder</h2>
+    <p style="font-size:12px;color:var(--dim);">POST a JSON filter object. Allowed top-level keys: <code>username</code>, <code>email</code>, <code>role</code>.<br>
+    Try normal: <code>{"username":"admin"}</code><br>
+    Try operator bypass: <code>{"username":{"$exists":true}}</code></p>
+    <textarea id="qbody" rows="5" style="width:100%;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);padding:8px;font-family:'JetBrains Mono',monospace;font-size:12px;">{"username": {"$exists": true}}</textarea>
+    <button class="btn small" style="margin-top:8px;" onclick="runSearch()">Send Query →</button>
+    <pre class="code" id="search-out" style="margin-top:12px;display:none;max-height:260px;overflow-y:auto;"></pre>
+  </div>
+  <div class="panel">
+    <h2>How the bypass works</h2>
+    <p style="font-size:13px;color:var(--dim);">The allow-list only checks top-level key names — <code>"username"</code> is allowed. It never checks what the <em>value</em> is. When the value is a dict (any operator object), the handler detects "has_operator" and returns the full user table.</p>
+    <pre class="code" style="font-size:11px;"># allow-list (what the code checks)
+ALLOWED = {"username", "email", "role"}
+for k in raw:
+    if k not in ALLOWED: reject()
+# … but never checks isinstance(v, dict)
+has_op = any(isinstance(v, dict)
+             for v in raw.values())
+if has_op:
+    return ALL_USERS  # full dump</pre>
+    <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-943 · NoSQL Operator Injection</div>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/aegis-v19.js') }}"></script>
+<script>
+async function runSearch() {
+  const body = document.getElementById('qbody').value;
+  const out = document.getElementById('search-out');
+  out.style.display='block'; out.textContent='Sending…';
+  try {
+    const r = await fetch('/api/search', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body
+    });
+    out.textContent = `HTTP ${r.status}\n\n` + JSON.stringify(await r.json(),null,2);
+  } catch(e){ out.textContent='Error: '+e.message; }
+}
+</script>
+{% endblock %}

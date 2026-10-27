@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+{% block title %}API Portal{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v19.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-api-portal.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">AEGIS API Portal</h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">All station API endpoints — including the vulnerable ones. Click any endpoint to expand its tester.</p>
+  </div>
+</div>
+
+<div class="grid grid-2" style="margin-bottom:24px;">
+  <div class="panel" style="display:flex;gap:14px;align-items:center;">
+    <div style="font-size:30px;font-family:'JetBrains Mono',monospace;color:var(--cyan);font-weight:700;">v0</div>
+    <div>
+      <div style="font-size:12px;color:var(--danger);font-family:'JetBrains Mono',monospace;letter-spacing:.08em;">UNAUTHENTICATED</div>
+      <div style="font-size:12px;color:var(--dim);">Legacy API — no auth, returns password hashes</div>
+    </div>
+  </div>
+  <div class="panel" style="display:flex;gap:14px;align-items:center;">
+    <div style="font-size:30px;font-family:'JetBrains Mono',monospace;color:var(--cyan);font-weight:700;">v4</div>
+    <div>
+      <div style="font-size:12px;color:var(--amber);font-family:'JetBrains Mono',monospace;letter-spacing:.08em;">WEAK SECRET</div>
+      <div style="font-size:12px;color:var(--dim);">JWT signed with "secret" — brute-forceable in ms</div>
+    </div>
+  </div>
+</div>
+
+<!-- v0 no-auth -->
+<div class="api-ep">
+  <div class="api-ep-head">
+    <span class="method get">GET</span>
+    <span class="api-ep-path">/api/v0/crew</span>
+    <span class="sev p1" style="margin-left:auto;">P1 · No Auth</span>
+  </div>
+  <div class="api-ep-body">
+    <p style="font-size:12px;color:var(--dim);">Legacy endpoint — no session or token required. Returns full user rows including <code>password_hash</code> and <code>api_token</code>.</p>
+    <button class="btn small" onclick="apiTest('/api/v0/crew','GET',null,'out-v0')">Send →</button>
+    <pre class="code" id="out-v0" style="margin-top:10px;display:none;max-height:200px;overflow-y:auto;"></pre>
+    <div style="margin-top:8px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-306 · Missing Authentication for Critical Function</div>
+  </div>
+</div>
+
+<!-- v1 authed -->
+<div class="api-ep">
+  <div class="api-ep-head">
+    <span class="method get">GET</span>
+    <span class="api-ep-path">/api/v1/crew</span>
+    <span style="margin-left:auto;font-size:11px;color:var(--dim);">requires X-API-Token</span>
+  </div>
+  <div class="api-ep-body">
+    <p style="font-size:12px;color:var(--dim);">Authenticated version. Grab an api_token from the v0 response above, paste it here.</p>
+    <input id="v1-token" type="text" placeholder="paste api_token here" style="width:100%;padding:7px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);margin-bottom:8px;">
+    <button class="btn small" onclick="apiTest('/api/v1/crew','GET',null,'out-v1',{'X-API-Token':document.getElementById('v1-token').value})">Send →</button>
+    <pre class="code" id="out-v1" style="margin-top:10px;display:none;"></pre>
+  </div>
+</div>
+
+<!-- v4 weak secret -->
+<div class="api-ep">
+  <div class="api-ep-head">
+    <span class="method post">POST</span>
+    <span class="api-ep-path">/api/token-v4</span>
+    <span class="sev p2" style="margin-left:auto;">P2 · Weak Secret</span>
+  </div>
+  <div class="api-ep-body">
+    <p style="font-size:12px;color:var(--dim);">Issues a HS256 JWT signed with the single word <code>"secret"</code>. Crack offline: <code>hashcat -a 0 -m 16500 &lt;token&gt; wordlist.txt</code></p>
+    <button class="btn small" onclick="apiTest('/api/token-v4','POST','username=guest','out-v4-issue')">Issue token (as guest) →</button>
+    <pre class="code" id="out-v4-issue" style="margin-top:10px;display:none;"></pre>
+  </div>
+</div>
+
+<div class="api-ep">
+  <div class="api-ep-head">
+    <span class="method get">GET</span>
+    <span class="api-ep-path">/api/crew-v4</span>
+    <span class="sev p2" style="margin-left:auto;">P2 · Weak Secret</span>
+  </div>
+  <div class="api-ep-body">
+    <p style="font-size:12px;color:var(--dim);">Protected by the weak secret. Crack the token above (change role to "admin"), paste the forged token here.</p>
+    <input id="v4-token" type="text" placeholder="Bearer &lt;forged admin token&gt;" style="width:100%;padding:7px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);margin-bottom:8px;">
+    <button class="btn small" onclick="apiTestWithAuth('/api/crew-v4','out-v4-check')">Send →</button>
+    <pre class="code" id="out-v4-check" style="margin-top:10px;display:none;"></pre>
+  </div>
+</div>
+
+<!-- NoSQL-style JSON search -->
+<div class="api-ep">
+  <div class="api-ep-head">
+    <span class="method post">POST</span>
+    <span class="api-ep-path">/api/search</span>
+    <span class="sev p2" style="margin-left:auto;">P2 · NoSQL Injection</span>
+  </div>
+  <div class="api-ep-body">
+    <p style="font-size:12px;color:var(--dim);">JSON filter API — the allow-list only checks top-level key names, not values. Pass an operator object (<code>{"$exists":true}</code>) as a value to dump all users.</p>
+    <textarea id="search-body" style="width:100%;height:80px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);padding:8px;font-family:'JetBrains Mono',monospace;font-size:12px;resize:vertical;">{"username": {"$exists": true}}</textarea>
+    <button class="btn small" style="margin-top:8px;" onclick="apiTestJson()">Send →</button>
+    <pre class="code" id="out-search" style="margin-top:10px;display:none;"></pre>
+    <div style="margin-top:8px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-943 · Improper Neutralization of Special Elements in Data Query Logic</div>
+  </div>
+</div>
+
+<!-- CORS misconfig -->
+<div class="api-ep">
+  <div class="api-ep-head">
+    <span class="method get">GET</span>
+    <span class="api-ep-path">/api/vrt/crew-data</span>
+    <span class="sev p2" style="margin-left:auto;">P2 · CORS Misconfig</span>
+  </div>
+  <div class="api-ep-body">
+    <p style="font-size:12px;color:var(--dim);">Reflects your Origin back with <code>Access-Control-Allow-Credentials: true</code>. Any cross-origin page can read this with credentials attached.</p>
+    <button class="btn small" onclick="apiTest('/api/vrt/crew-data','GET',null,'out-cors')">Send →</button>
+    <pre class="code" id="out-cors" style="margin-top:10px;display:none;"></pre>
+  </div>
+</div>
+
+<!-- CRLF -->
+<div class="api-ep">
+  <div class="api-ep-head">
+    <span class="method post">POST</span>
+    <span class="api-ep-path">/comms/set-lang</span>
+    <span class="sev p2" style="margin-left:auto;">P2 · CRLF Injection</span>
+  </div>
+  <div class="api-ep-body">
+    <p style="font-size:12px;color:var(--dim);">The <code>lang</code> parameter is injected directly into the <code>X-Station-Lang</code> response header. Embed <code>\r\n</code> to add arbitrary headers.</p>
+    <button class="btn small" onclick="testCrlf()">Inject CRLF →</button>
+    <pre class="code" id="out-crlf" style="margin-top:10px;display:none;"></pre>
+    <div style="margin-top:8px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-113 · Improper Neutralization of CRLF Sequences in HTTP Headers</div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v19.js') }}"></script>
+<script src="{{ url_for('static', filename='js/vrt-lab.js') }}"></script>
+<script>
+async function apiTestWithAuth(url, outId) {
+  const tok = document.getElementById('v4-token').value;
+  await apiTest(url, 'GET', null, outId, {'Authorization': tok});
+}
+async function apiTestJson() {
+  const body = document.getElementById('search-body').value;
+  const out = document.getElementById('out-search');
+  out.style.display = 'block'; out.textContent = 'Sending…';
+  try {
+    const r = await fetch('/api/search', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: body
+    });
+    out.textContent = `HTTP ${r.status}\n\n` + JSON.stringify(await r.json(), null, 2);
+  } catch (e) { out.textContent = 'Error: ' + e.message; }
+}
+async function testCrlf() {
+  const payload = 'en\r\nSet-Cookie:poisoned=1;Path=/';
+  await apiTest('/comms/set-lang', 'POST', 'lang=' + encodeURIComponent(payload), 'out-crlf');
+}
+// patch apiTest to optionally accept extra headers
+const _origApiTest = apiTest;
+window.apiTest = async function(url, method, body, outId, extraHeaders) {
+  const out = document.getElementById(outId);
+  if (out) { out.style.display = 'block'; out.textContent = 'Sending…'; }
+  const opts = {method: method||'GET', headers: extraHeaders||{}};
+  if (body) {
+    opts.body = typeof body === 'string' ? body : JSON.stringify(body);
+    if (!opts.headers['Content-Type'])
+      opts.headers['Content-Type'] = typeof body === 'object'
+        ? 'application/json' : 'application/x-www-form-urlencoded';
+  }
+  try {
+    const res = await fetch(url, opts);
+    const ct = res.headers.get('content-type')||'';
+    const data = ct.includes('json') ? JSON.stringify(await res.json(),null,2) : await res.text();
+    if (out) out.textContent = `HTTP ${res.status}\n\n${data}`;
+  } catch (e) { if (out) out.textContent = 'Error: ' + e.message; }
+};
+</script>
+{% endblock %}

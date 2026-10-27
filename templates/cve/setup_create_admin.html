@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setup :: AEGIS Station</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<canvas id="starfield"></canvas>
+<div class="auth-wrap">
+  <div class="auth-scanline"></div>
+  <div class="auth-card" style="width:420px;">
+    <div class="brand">
+      <div class="mark" style="color:var(--danger);">CVE-2023-22515 (CONFLUENCE ANALOG)</div>
+      <div class="name">INITIAL <span>SETUP</span></div>
+    </div>
+    <p class="mono-dim">First-run setup — still reachable on live, already-configured deployments.</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, msg in messages %}<div class="flash {{ category }}">{{ msg }}</div>{% endfor %}
+    {% endwith %}
+    <form method="POST">
+      <label>New Admin Username</label>
+      <input type="text" name="username" required>
+      <label>Password</label>
+      <input type="password" name="password" required>
+      <button class="btn" style="width:100%;justify-content:center;background:var(--danger);" type="submit">Create Admin Account</button>
+    </form>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

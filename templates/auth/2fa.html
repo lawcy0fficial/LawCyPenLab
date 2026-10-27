@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}2FA Verification{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v19.css') }}">
+{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-2fa.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">2-Factor Verification <span class="sev p1" style="margin-left:8px;">P1 · 2FA Bypass</span></h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">Enter the 6-digit one-time code shown on your registered device.</p>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="panel">
+    <h2>Enter OTP Code</h2>
+    <div class="otp-display" id="otp-display"></div>
+    <div class="otp-pad">
+      {% for d in ['1','2','3','4','5','6','7','8','9','⌫','0','✓'] %}
+      <button class="otp-btn" data-val="{{ d }}">{{ d }}</button>
+      {% endfor %}
+    </div>
+    <form method="post" action="{{ url_for('auth_verify_otp') }}" id="otp-form" style="margin-top:14px;">
+      <input type="hidden" name="otp" id="otp-hidden">
+      <button type="submit" class="btn small">Verify →</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <h2>Vulnerability Details</h2>
+    <p style="font-size:13px;color:var(--dim);">Your session's OTP code for this demo:</p>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:32px;letter-spacing:.25em;color:var(--cyan);margin:10px 0 16px;">{{ otp }}</div>
+
+    <div class="vuln-callout">
+      <span class="sev p1" style="flex:none;align-self:flex-start;">P1</span>
+      <div>
+        <b style="font-size:12px;display:block;margin-bottom:4px;">Bypass Conditions</b>
+        <ul style="margin:0;padding:0 0 0 16px;font-size:12px;color:var(--dim);">
+          <li>Code is stored globally, not bound to the requesting session</li>
+          <li>No rate-limit on <code>/auth/verify-otp</code></li>
+          <li>No expiry — code stays valid until next user triggers a new one</li>
+          <li>Any user's code can pass any other user's challenge</li>
+        </ul>
+      </div>
+    </div>
+
+    <button class="btn small" onclick="test2faBypass()" style="margin-top:14px;">Test bypass via API →</button>
+    <pre class="code" id="otp-out" style="margin-top:10px;display:none;"></pre>
+    <div style="margin-top:12px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-287 · Improper Authentication<br>CWE-304 · Missing Critical Step in Authentication</div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v19.js') }}"></script>
+<script>
+async function test2faBypass() {
+  // Using the OTP displayed on screen (which belongs to this user's session)
+  // to pass "another" user's 2FA — in a real multi-user scenario you'd
+  // read this code from YOUR session and replay it against the victim's
+  const code = document.getElementById('otp-display').textContent || '{{ otp }}';
+  await apiTest('/auth/verify-otp','POST','otp='+code,'otp-out');
+}
+</script>
+{% endblock %}

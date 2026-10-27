@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Settings Merge — Prototype Pollution{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p2">P2</span>
+    <h2>Deep Merge — Shared State Pollution</h2>
+    <div><span class="mono-dim">CWE-915 · Recursive merge on shared dict · No copy, no ownership check</span></div>
+  </div>
+  <div class="vuln-info">
+    The merge function recursively writes attacker-supplied JSON keys directly into the <b>shared</b>
+    <code>_USER_SETTINGS</code> dict — no copy is made, no ownership checked.
+    Any authenticated user can overwrite any other user's settings, or inject keys into the global dict.
+  </div>
+  <div class="hint-box">
+    <b>Attack payloads:</b>
+    <ul>
+      <li><code>{"admin": {"admin_menu": true}}</code> — flip admin feature flag</li>
+      <li><code>{"admin": {"role": "commander"}}</code> — overwrite role in shared settings</li>
+      <li><code>{"k.mbeki": {"notify": false, "theme": "hacked"}}</code> — sabotage another user</li>
+    </ul>
+    <b>Fix:</b> <code>import copy; user_settings = copy.deepcopy(_USER_SETTINGS[username])</code>
+    — always merge into a per-user copy, never the shared object.
+  </div>
+</div>
+<div class="two-col">
+  <div class="panel">
+    <h2>Current Shared Settings</h2>
+    <pre class="result-block" id="settings-view">{{ settings | tojson(indent=2) }}</pre>
+  </div>
+  <div class="panel">
+    <h2>Submit Patch</h2>
+    <div class="lab-form">
+      <label>JSON Patch (merged into shared store)</label>
+      <textarea id="patch-input" rows="8" class="code-input">{"admin": {"admin_menu": true}}</textarea>
+      <button onclick="sendPatch()" class="btn btn-danger">Merge Patch</button>
+    </div>
+    <pre class="result-block" id="merge-result" style="margin-top:12px;min-height:60px"></pre>
+  </div>
+</div>
+{% block extra_scripts %}
+<script>
+function sendPatch() {
+  var patch;
+  try { patch = JSON.parse(document.getElementById('patch-input').value); }
+  catch(e) { alert('Invalid JSON: ' + e.message); return; }
+  fetch('', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(patch)
+  }).then(r=>r.json()).then(d=>{
+    document.getElementById('merge-result').textContent = JSON.stringify(d,null,2);
+    if(d.settings_now) document.getElementById('settings-view').textContent = JSON.stringify(d.settings_now,null,2);
+  });
+}
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Password Reset (CVE-2023-7028 Analog){% endblock %}
+{% block content %}
+<div class="pagehead">
+  <h1>Password Reset</h1>
+  <p><span class="badge warn">CVE-2023-7028 (GitLab Account Takeover) analog</span></p>
+</div>
+<div class="panel">
+  <form method="POST">
+    <label>Account Email (victim's address)</label>
+    <input type="email" name="email" placeholder="r.solis@aegis-station.ops" required>
+    <label>CC Email (attacker's address — no confirmation required)</label>
+    <input type="email" name="cc_email" placeholder="attacker@evil.example.com">
+    <button class="btn" type="submit">Send Reset Link</button>
+  </form>
+</div>
+{% endblock %}

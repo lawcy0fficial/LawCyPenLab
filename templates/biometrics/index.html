@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% block title %}Biometrics Auth{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v22.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-biometrics.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">Crew Biometric Authentication</h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">Retina + fingerprint verification · JWT v6 access tokens · Three vulnerability classes.</p>
+  </div>
+</div>
+
+<div class="grid grid-2" style="gap:18px;align-items:start;margin-bottom:20px;">
+  <!-- Biometric scanner -->
+  <div class="panel" style="text-align:center;">
+    <h2 style="font-size:13px;margin-bottom:16px;">Biometric Scanner</h2>
+    <div class="bio-pad">
+      <div class="bio-scan">
+        <img src="{{ url_for('static', filename='img/svg/icon-biometrics.svg') }}"
+             width="60" height="60" style="margin-top:20px;opacity:.4;" alt="">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px;">Username</label>
+        <input id="bio-user" type="text" placeholder="admin" value="admin"
+               style="width:100%;padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:12px;text-align:center;">
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px;">Biometric token</label>
+        <input id="bio-token" type="text" placeholder="VALID or anything else"
+               style="width:100%;padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:12px;text-align:center;">
+      </div>
+      <button class="btn small" onclick="verifyBio()" style="width:100%;">Scan →</button>
+      <div class="bio-result" id="bio-result"></div>
+    </div>
+  </div>
+
+  <!-- Finding cards -->
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div class="panel" style="background:rgba(255,92,92,0.04);border-color:rgba(255,92,92,.25);">
+      <h2 style="font-size:13px;margin-bottom:10px;">Active Findings</h2>
+      <div class="vuln-callout"><span class="sev p1" style="flex:none;align-self:flex-start;">P1</span>
+        <p>JWT RS256→HS256 algorithm confusion — server accepts both algorithms; attacker signs HS256 token using the public RSA key as HMAC secret (CWE-347)</p>
+      </div>
+      <div class="vuln-callout" style="margin-top:8px;"><span class="sev p2" style="flex:none;align-self:flex-start;">P2</span>
+        <p>Account enumeration via distinct error messages — "not found" vs "scan failed" reveals username existence (CWE-204)</p>
+      </div>
+      <div class="vuln-callout" style="margin-top:8px;"><span class="sev p2" style="flex:none;align-self:flex-start;">P2</span>
+        <p>No rate limiting — bulk endpoint verifies 50 usernames per call with zero throttling (CWE-307)</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 style="font-size:13px;margin-bottom:8px;">Error Message Comparison</h2>
+      <p style="font-size:12px;color:var(--dim);">Try a username that exists vs one that doesn't — the error wording differs, leaking existence.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+        <button class="btn small" onclick="quickVerify('admin','wrong')">admin (exists)</button>
+        <button class="btn small secondary" onclick="quickVerify('nonexistent_xyz','wrong')">nonexistent_xyz</button>
+        <button class="btn small secondary" onclick="quickVerify('commander','wrong')">commander</button>
+      </div>
+      <pre class="code" id="err-compare" style="margin-top:10px;display:none;font-size:11px;"></pre>
+    </div>
+  </div>
+</div>
+
+<!-- Account Enumeration via bulk -->
+<div class="panel" style="margin-bottom:18px;">
+  <h2>Bulk Enumeration <span class="sev p2" style="margin-left:8px;">P2 · No Rate Limit</span></h2>
+  <p style="font-size:13px;color:var(--dim);">Fire <code>POST /biometrics/bulk-verify</code> with a list of usernames — the server checks all 50 per request with zero throttling or lockout.</p>
+  <button class="btn small" onclick="runEnumeration()" style="margin-bottom:12px;">Run Enumeration Probe →</button>
+  <div id="enum-result" style="display:none;overflow-x:auto;">
+    <table class="brute-table">
+      <thead><tr style="background:var(--panel-2);">
+        <th style="padding:6px 8px;text-align:left;font-size:10px;letter-spacing:.06em;color:var(--dim);">USERNAME</th>
+        <th style="padding:6px 8px;text-align:left;font-size:10px;letter-spacing:.06em;color:var(--dim);">STATUS</th>
+        <th style="padding:6px 8px;text-align:left;font-size:10px;letter-spacing:.06em;color:var(--dim);">EXISTS</th>
+        <th style="padding:6px 8px;text-align:left;font-size:10px;letter-spacing:.06em;color:var(--dim);">ERROR MESSAGE</th>
+        <th style="padding:6px 8px;text-align:left;font-size:10px;letter-spacing:.06em;color:var(--dim);">LATENCY</th>
+      </tr></thead>
+      <tbody id="enum-tbody"></tbody>
+    </table>
+  </div>
+  <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-307 · Improper Restriction of Authentication Attempts + CWE-204 · Observable Response Discrepancy</div>
+</div>
+
+<!-- JWT RS256→HS256 Confusion -->
+<div class="panel">
+  <h2>JWT Algorithm Confusion <span class="sev p1" style="margin-left:8px;">P1 · RS256→HS256</span></h2>
+  <div class="grid grid-2" style="gap:16px;">
+    <div>
+      <p style="font-size:13px;color:var(--dim);">The <code>/api/v6/admin</code> endpoint verifies tokens with <code>algorithms=["RS256","HS256"]</code>. An attacker downloads the public RSA key from <code>/api/v6/public-key</code>, then forges a HS256 token using that public key as the HMAC secret — the server accepts it.</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+        <button class="btn small" onclick="showPubKey()">1. Fetch Public Key →</button>
+        <button class="btn small secondary" onclick="forgeJwtConfusion()">2. Forge + Send HS256 Token →</button>
+      </div>
+      <pre class="code" id="jwt-conf-out" style="margin-top:12px;display:none;font-size:11px;max-height:260px;overflow-y:auto;"></pre>
+    </div>
+    <div>
+      <p style="font-size:12px;color:var(--dim);margin-bottom:10px;">Attack flow:</p>
+      <div class="jwt-segment header">HEADER: {"alg":"HS256","typ":"JWT"}</div>
+      <div class="jwt-segment payload">PAYLOAD: {"username":"attacker","role":"admin"}</div>
+      <div class="jwt-segment sig">SIGNATURE: HMAC-SHA256(header.payload, <span style="color:var(--danger);">RSA_PUBLIC_KEY</span>)</div>
+      <div style="margin-top:12px;background:rgba(255,92,92,.06);border:1px solid rgba(255,92,92,.25);border-radius:var(--radius);padding:10px;font-size:11px;color:var(--dim);">
+        Server calls <code>jwt.decode(token, public_key, algorithms=["RS256","HS256"])</code><br><br>
+        It accepts <b>either</b> algorithm — so when it sees alg=HS256, it uses the public key as the HMAC secret to verify, which is exactly what the attacker signed with.
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-347 · Improper Verification of Cryptographic Signature</div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v22.js') }}"></script>
+<script>
+async function verifyBio(){
+  const u = document.getElementById('bio-user').value;
+  const t = document.getElementById('bio-token').value;
+  const res = document.getElementById('bio-result');
+  res.style.display='block';
+  const r = await fetch('/biometrics/verify',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`username=${encodeURIComponent(u)}&biometric=${encodeURIComponent(t)}`});
+  const d = await r.json();
+  res.className = 'bio-result ' + (r.status===200?'found':'notfound');
+  res.textContent = `HTTP ${r.status}: ${d.error||JSON.stringify(d)}`;
+}
+async function quickVerify(u, t){
+  const out = document.getElementById('err-compare');
+  out.style.display='block';
+  const r = await fetch('/biometrics/verify',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:`username=${encodeURIComponent(u)}&biometric=${encodeURIComponent(t)}`});
+  const d = await r.json();
+  const prev = out.textContent;
+  out.textContent = (prev||'') + `\n${u} → HTTP ${r.status}: "${d.error}" (exists=${d.exists??true})`;
+}
+async function showPubKey(){
+  const out = document.getElementById('jwt-conf-out');
+  out.style.display='block'; out.textContent='Fetching…';
+  const r = await fetch('/api/v6/public-key');
+  out.textContent = 'Public key (use as HS256 secret):\n\n' + await r.text();
+}
+</script>
+{% endblock %}

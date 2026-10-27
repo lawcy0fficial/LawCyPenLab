@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Telemetry Dashboard{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v20.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-telemetry-dash.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">Telemetry Dashboard</h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">Live sensor feeds — unauthenticated API, timing-attack demo, log injection.</p>
+  </div>
+  <button class="btn small" style="margin-left:auto;" onclick="refreshTelemetry()">↻ Refresh</button>
+</div>
+
+<div class="telem-grid" id="gauge-grid">
+  <div class="gauge-card"><span class="gauge-label">O₂ LEVEL</span><span class="gauge-val ok" id="g-o2">98.4 %</span><div class="gauge-bar"><div class="gauge-fill ok" id="b-o2" style="width:98%"></div></div></div>
+  <div class="gauge-card"><span class="gauge-label">HULL PRESSURE</span><span class="gauge-val ok" id="g-psi">14.6 PSI</span><div class="gauge-bar"><div class="gauge-fill ok" id="b-psi" style="width:73%"></div></div></div>
+  <div class="gauge-card"><span class="gauge-label">CORE TEMPERATURE</span><span class="gauge-val crit" id="g-temp">9 182 °C</span><div class="gauge-bar"><div class="gauge-fill crit" id="b-temp" style="width:100%"></div></div></div>
+  <div class="gauge-card"><span class="gauge-label">ORBIT ALTITUDE</span><span class="gauge-val ok" id="g-orbit">412 km</span><div class="gauge-bar"><div class="gauge-fill ok" style="width:55%"></div></div></div>
+  <div class="gauge-card"><span class="gauge-label">CREW ON BOARD</span><span class="gauge-val ok" id="g-crew">6 / 8</span><div class="gauge-bar"><div class="gauge-fill ok" style="width:75%"></div></div></div>
+  <div class="gauge-card"><span class="gauge-label">SOLAR OUTPUT</span><span class="gauge-val warn" id="g-solar">74 %</span><div class="gauge-bar"><div class="gauge-fill warn" style="width:74%"></div></div></div>
+</div>
+
+<div class="grid grid-2">
+  <div class="panel">
+    <h2>Unauthenticated Sensor API <span class="sev p1" style="margin-left:6px;">P1</span></h2>
+    <p style="font-size:12px;color:var(--dim);">The live telemetry endpoint has no authentication — any internet-connected device can read it.</p>
+    <button class="btn small" onclick="fetchRaw()">Fetch /api/telemetry/live →</button>
+    <pre class="code" id="raw-out" style="margin-top:10px;display:none;max-height:180px;overflow-y:auto;"></pre>
+    <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-306 · Missing Authentication for Critical Function</div>
+  </div>
+  <div class="panel">
+    <h2>Timing Attack <span class="sev p2" style="margin-left:6px;">P2</span></h2>
+    <p style="font-size:12px;color:var(--dim);">Non-constant-time username lookup leaks existence via response latency. Run the probe to see the difference.</p>
+    <button class="btn small" onclick="runTimingAttack()">Run Timing Probe →</button>
+    <div class="timing-bar-wrap" id="timing-out" style="display:none;margin-top:10px;"></div>
+    <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-208 · Observable Timing Discrepancy</div>
+  </div>
+</div>
+
+<div class="panel" style="margin-top:18px;">
+  <h2>Log Injection <span class="sev p3" style="margin-left:6px;">P3</span></h2>
+  <p style="font-size:12px;color:var(--dim);">The <code>sensor_id</code> field is written to the log verbatim. Embed <code>\n</code> to forge extra log lines.</p>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+    <input id="sensor-id" type="text" value="SEN-001\n[FAKE] 2024-03-15T02:00:00 LOGIN admin SUCCESS" style="flex:1;padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:12px;">
+    <button class="btn small" onclick="sendLogInject()">Inject →</button>
+  </div>
+  <pre class="code" id="log-out" style="margin-top:10px;display:none;"></pre>
+  <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-117 · Log Injection — written to var_logs/telemetry.log</div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v20.js') }}"></script>
+<script>
+async function refreshTelemetry() {
+  const r = await fetch('/api/telemetry/live');
+  const d = await r.json();
+  document.getElementById('g-o2').textContent = d.o2_pct + ' %';
+  document.getElementById('g-psi').textContent = d.hull_psi + ' PSI';
+  document.getElementById('g-temp').textContent = d.core_temp_c.toLocaleString() + ' °C';
+  document.getElementById('g-crew').textContent = d.crew_count + ' / 8';
+}
+async function fetchRaw() {
+  const out = document.getElementById('raw-out');
+  out.style.display = 'block';
+  const r = await fetch('/api/telemetry/live');
+  out.textContent = `HTTP ${r.status}\n\n` + JSON.stringify(await r.json(), null, 2);
+}
+async function sendLogInject() {
+  const sid = document.getElementById('sensor-id').value;
+  const out = document.getElementById('log-out');
+  out.style.display = 'block'; out.textContent = 'Injecting…';
+  const r = await fetch('/telemetry/log-inject', {
+    method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'sensor_id='+encodeURIComponent(sid)
+  });
+  out.textContent = `HTTP ${r.status}\n\n` + JSON.stringify(await r.json(), null, 2);
+}
+setInterval(refreshTelemetry, 8000);
+</script>
+{% endblock %}

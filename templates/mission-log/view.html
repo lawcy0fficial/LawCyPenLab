@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Log Viewer{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v19.css') }}">
+{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+  <a href="{{ url_for('mission_log_index') }}" class="btn small secondary">← Back</a>
+  <h1 style="margin:0;">{{ log_file or 'Log Viewer' }}</h1>
+  <span class="sev p1" style="margin-left:auto;">P1 · LFI</span>
+</div>
+
+{% if error %}
+<div class="flash err">{{ error }}</div>
+{% endif %}
+
+{% if content %}
+<div class="panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+    <code style="font-size:12px;color:var(--cyan);">{{ log_file }}</code>
+    <span style="font-size:11px;color:var(--dim);">{{ content | length }} bytes</span>
+  </div>
+  <pre class="code" style="max-height:60vh;overflow-y:auto;white-space:pre-wrap;word-break:break-all;">{{ content }}</pre>
+  <div style="margin-top:10px;font-size:11px;color:var(--danger);font-family:'JetBrains Mono',monospace;">CWE-22 · this content was read from the server filesystem using the unsanitised ?log= input above</div>
+</div>
+{% else %}
+<div class="panel">
+  <p style="color:var(--dim);">Enter a filename using the form on the index page, or follow one of the traversal examples.</p>
+</div>
+{% endif %}
+{% endblock %}

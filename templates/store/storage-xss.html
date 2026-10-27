@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Browser Storage XSS Chain{% endblock %}
+{% block extra_head %}
+<script>
+// Simulate app storing JWT in sessionStorage (common antipattern)
+sessionStorage.setItem('jwt', '{{ token | e }}');
+sessionStorage.setItem('username', '{{ session.get("username","crew") }}');
+</script>
+{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p2">P2</span>
+    <h2>Insecure Browser Storage + XSS Chain</h2>
+    <div><span class="mono-dim">CWE-79 + CWE-922 · JWT in sessionStorage · Any XSS on the origin reads it</span></div>
+  </div>
+  <div class="vuln-info">
+    This app stores your JWT in <code>sessionStorage</code> — readable by <em>any script on this origin</em>.
+    Unlike <code>HttpOnly</code> cookies (inaccessible to JS), sessionStorage has no such protection.
+    A stored XSS payload anywhere on this domain can silently steal the token and exfiltrate it.
+  </div>
+  <div class="hint-box">
+    <b>Your JWT is now in sessionStorage. Extract it with:</b>
+    <pre class="result-block">sessionStorage.getItem('jwt')</pre>
+    <b>XSS exfil payload (inject via feedback/comms/notes):</b>
+    <pre class="result-block">{{ xss_payload | e }}</pre>
+    <b>Attacker receives:</b> <code>?t=eyJhbGci…</code> — full JWT, ready to replay.
+    <br><b>Fix:</b> Store JWTs in <code>HttpOnly</code> cookies only. Never in localStorage/sessionStorage.
+  </div>
+</div>
+<div class="panel">
+  <h2>Live sessionStorage Contents</h2>
+  <pre class="result-block" id="storage-dump">Loading…</pre>
+  <button onclick="exfil()" class="btn btn-danger" style="margin-top:10px">Simulate XSS Exfiltration</button>
+  <div id="exfil-result" style="margin-top:10px"></div>
+</div>
+<div class="panel">
+  <h2>Post a Note (Stored XSS trigger)</h2>
+  <form method="POST" class="lab-form">
+    <label>Note content (try XSS payload above)</label>
+    <textarea name="notes" rows="4" class="code-input">{{ notes | default('') | e }}</textarea>
+    <button class="btn" type="submit">Post Note</button>
+  </form>
+  {% if notes %}<div style="margin-top:12px;padding:12px;background:rgba(0,212,255,.04);border:1px solid var(--hairline);border-radius:var(--r)">{{ notes | safe }}</div>{% endif %}
+</div>
+{% block extra_scripts %}
+<script>
+var dump = document.getElementById('storage-dump');
+dump.textContent = JSON.stringify({
+  jwt: sessionStorage.getItem('jwt'),
+  username: sessionStorage.getItem('username')
+}, null, 2);
+function exfil(){
+  var token = sessionStorage.getItem('jwt');
+  var res = document.getElementById('exfil-result');
+  res.innerHTML = '<div class="flash danger">XSS simulation: would send to attacker: <code>https://attacker.example/?t='+token.slice(0,40)+'…</code></div>';
+}
+</script>
+{% endblock %}
+{% endblock %}

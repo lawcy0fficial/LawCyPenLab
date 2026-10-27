@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Insecure Reset — Predictable Token{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p2">P2</span>
+    <h2>Insecure Randomness — Predictable Reset Token</h2>
+    <p class="mono-dim">CWE-338 · random.randint() seeded with time.time() · ±60s window = 120 seed candidates</p>
+  </div>
+  <div class="vuln-info">
+    Python's <code>random</code> module uses Mersenne Twister — a PRNG, not a CSPRNG.
+    Seeding it with <code>int(time.time())</code> (second-precision) limits the seed space
+    to ~120 values within ±60 seconds of the request. The "Predict" action demonstrates
+    the crack in real time.
+    <br><b>Fix:</b> Replace <code>random.randint()</code> with <code>secrets.token_urlsafe(32)</code>.
+  </div>
+
+  {% if result %}
+  <pre class="result-block">{{ result | tojson(indent=2) }}</pre>
+  {% endif %}
+
+  <div class="three-col">
+    <div>
+      <h3>1 — Request Reset Token</h3>
+      <form method="POST" class="lab-form">
+        <input type="hidden" name="action" value="request">
+        <label>Username</label>
+        <input name="username" value="admin" class="input-field">
+        <button type="submit" class="btn">Get Token</button>
+      </form>
+    </div>
+    <div>
+      <h3>2 — Predict Token (crack)</h3>
+      <p class="mono-dim">Tries all seeds within ±60s — typically &lt;120 guesses</p>
+      <form method="POST" class="lab-form">
+        <input type="hidden" name="action" value="predict">
+        <button type="submit" class="btn btn-danger">Crack (±60s seeds)</button>
+      </form>
+    </div>
+    <div>
+      <h3>3 — Redeem Token</h3>
+      <form method="POST" class="lab-form">
+        <input type="hidden" name="action" value="redeem">
+        <label>Token (12 digits)</label>
+        <input name="token" placeholder="123456789012" class="input-field">
+        <button type="submit" class="btn">Redeem</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

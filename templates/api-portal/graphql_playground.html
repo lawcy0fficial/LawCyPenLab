@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% block title %}GraphQL Playground{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v20.css') }}">
+{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+  <a href="{{ url_for('api_portal') }}" class="btn small secondary">← API Portal</a>
+  <h1 style="margin:0;">GraphQL v5 Playground</h1>
+</div>
+
+<div class="grid grid-2" style="align-items:start;">
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div class="panel">
+      <h2>Single Query / Mutation</h2>
+      <textarea id="gql-query" class="gql-editor">{ crew { username email role apiToken passwordHash } }</textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button class="btn small" onclick="runGql()">Execute →</button>
+        <button class="btn small secondary" onclick="document.getElementById('gql-query').value='{ __schema { types { name fields { name } } } }'">Introspect schema</button>
+        <button class="btn small secondary" onclick="document.getElementById('gql-query').value='mutation { updateRole(username:\"guest\", role:\"admin\") { username role } }'">Escalation mutation</button>
+      </div>
+      <pre class="code" id="gql-out" style="margin-top:10px;display:none;max-height:220px;overflow-y:auto;font-size:11px;"></pre>
+    </div>
+
+    <div class="panel">
+      <h2>Batched Operations <span class="sev p2" style="margin-left:6px;">P2</span></h2>
+      <p style="font-size:12px;color:var(--dim);">Three operations sent as a JSON array in one HTTP call — introspection + data dump + role-change mutation — all at once, bypassing per-operation rate limits.</p>
+      <button class="btn small" onclick="runGqlBatch()">Send Batch (3 ops) →</button>
+      <pre class="code" id="gql-batch-out" style="margin-top:10px;display:none;max-height:220px;overflow-y:auto;font-size:11px;"></pre>
+      <div style="margin-top:8px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-400 · batching enables amplification and rate-limit bypass</div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div class="panel">
+      <h2>Schema (Introspectable) <span class="sev p2" style="margin-left:6px;">P2</span></h2>
+      <p style="font-size:12px;color:var(--dim);">Introspection is enabled in production — any caller can enumerate the full schema, discover internal field names, and locate mutation endpoints.</p>
+      <div class="gql-schema-type">
+        <div class="gql-type-name">type Query</div>
+        <div class="gql-field"><span class="field-name">crew</span>: <span class="field-type">[Crew]</span></div>
+        <div class="gql-field"><span class="field-name">alerts</span>: <span class="field-type">[Alert]</span></div>
+        <div class="gql-field"><span class="field-name">tasks</span>: <span class="field-type">[Task]</span></div>
+      </div>
+      <div class="gql-schema-type">
+        <div class="gql-type-name" style="color:var(--danger);">type Mutation</div>
+        <div class="gql-field"><span class="field-name">updateRole</span>(username: <span class="field-type">String</span>, role: <span class="field-type">String</span>): <span class="field-type">Crew</span></div>
+        <div class="gql-field"><span class="field-name">dismissAlert</span>(id: <span class="field-type">Int</span>): <span class="field-type">Boolean</span></div>
+      </div>
+      <div class="gql-schema-type">
+        <div class="gql-type-name">type Crew</div>
+        <div class="gql-field"><span class="field-name">username</span> <span class="field-name">email</span> <span class="field-name">role</span></div>
+        <div class="gql-field" style="color:var(--danger);"><span class="field-name">apiToken</span> <span class="field-name">passwordHash</span> ← over-exposed</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Attack Surface</h2>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;">
+        <div class="vuln-callout"><span class="sev p2" style="flex:none;">P2</span><p>Introspection enabled — full schema enumerable by any caller without authentication</p></div>
+        <div class="vuln-callout"><span class="sev p2" style="flex:none;">P2</span><p><code>updateRole</code> mutation accepts no auth token — any caller can escalate any user</p></div>
+        <div class="vuln-callout"><span class="sev p2" style="flex:none;">P2</span><p>Batch array of 100+ introspection queries can DoS the server (no depth/complexity limit)</p></div>
+        <div class="vuln-callout"><span class="sev p2" style="flex:none;">P2</span><p><code>Crew</code> type exposes <code>passwordHash</code> and <code>apiToken</code> fields — excessive data exposure</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v20.js') }}"></script>
+{% endblock %}

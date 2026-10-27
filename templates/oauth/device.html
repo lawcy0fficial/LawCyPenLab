@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}OAuth Device Code Phishing{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p2">P2</span>
+    <h2>OAuth Device Code Phishing — RFC 8628</h2>
+    <div><span class="mono-dim">Attacker initiates flow · Victim authenticates at real provider URL · Attacker polls for token</span></div>
+  </div>
+  <div class="vuln-info">
+    The attacker initiates a device authorization flow and receives a <code>user_code</code> + legitimate provider URL.
+    They send the victim a convincing message: <em>"Click here to authenticate: https://real-provider.com/activate — enter code XXXX-YYYY"</em>.
+    The victim authenticates at a <b>real, trusted URL</b> — no phishing domain. The attacker polls until the token is granted.
+  </div>
+  <div class="hint-box">
+    <b>Attack flow:</b>
+    <ol>
+      <li>Attacker clicks "Initiate Device Flow" → gets <code>user_code</code> + activation URL</li>
+      <li>Attacker sends victim the phishing message with that code</li>
+      <li>Victim visits the activation URL and enters the code</li>
+      <li>Attacker polls "Check Authorization" → receives victim's token</li>
+    </ol>
+    <b>Defenses:</b> Short code expiry (15 min), user confirmation screen showing requesting app name,
+    rate-limit activation attempts, educate users to verify which app requested the code.
+  </div>
+</div>
+<div class="two-col">
+  <div class="panel">
+    <h2>Attacker: Initiate Flow</h2>
+    <form method="POST" class="lab-form" id="initiate-form">
+      <input type="hidden" name="action" value="request">
+      <label>Requested Scope</label>
+      <input name="scope" value="read:crew write:config" class="input-field">
+      <button type="submit" class="btn btn-danger">Initiate Device Flow</button>
+    </form>
+    <div id="initiate-result" style="margin-top:10px"></div>
+    <h3 style="margin-top:16px">Attacker: Poll for Token</h3>
+    <form method="POST" class="lab-form" id="poll-form">
+      <input type="hidden" name="action" value="poll">
+      <label>User Code</label>
+      <input name="user_code" id="poll-code" placeholder="XXXX-XXXX" class="input-field">
+      <button type="submit" class="btn">Check Authorization</button>
+    </form>
+    <div id="poll-result" style="margin-top:10px"></div>
+  </div>
+  <div class="panel">
+    <h2>Active Device Codes</h2>
+    {% if pending_codes %}
+    <table class="data-table">
+      <tr><th>User Code</th><th>Scope</th><th>Authorized</th><th>As</th></tr>
+      {% for code, info in pending_codes.items() %}
+      <tr>
+        <td><code>{{ code }}</code></td>
+        <td>{{ info.scope }}</td>
+        <td><span class="badge {{ 'success' if info.authorized else 'p3' }}">
+          {{ 'YES' if info.authorized else 'pending' }}</span></td>
+        <td>{{ info.username or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="mono-dim">No active codes — initiate a flow to begin.</p>
+    {% endif %}
+    <p class="mono-dim" style="margin-top:12px">
+      Victim activation page: <a href="{{ url_for('oauth_device_activate') }}">{{ url_for('oauth_device_activate') }}</a>
+    </p>
+  </div>
+</div>
+{% block extra_scripts %}
+<script>
+document.getElementById('initiate-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var fd = new FormData(this);
+  fetch('', {method:'POST', body:fd})
+    .then(r=>r.json()).then(d=>{
+      document.getElementById('initiate-result').innerHTML =
+        '<pre class="result-block">' + JSON.stringify(d,null,2) + '</pre>';
+      if(d.user_code) document.getElementById('poll-code').value = d.user_code;
+    });
+});
+document.getElementById('poll-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var fd = new FormData(this);
+  fetch('', {method:'POST', body:fd})
+    .then(r=>r.json()).then(d=>{
+      document.getElementById('poll-result').innerHTML =
+        '<pre class="result-block">' + JSON.stringify(d,null,2) + '</pre>';
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

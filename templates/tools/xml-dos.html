@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Billion Laughs DoS{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p2">P2</span>
+    <h2>XML Entity Expansion DoS — Billion Laughs</h2>
+    <p class="mono-dim">CWE-776 · Internal entities only · No network · Pure RAM exhaustion</p>
+  </div>
+  <div class="vuln-info">
+    <b>Distinct from XXE file-read:</b> uses <em>only internal entities</em> — no external network request.
+    A 400-byte payload with 6 nesting levels expands to 10<sup>6</sup> copies of "lol" in the parser's RAM.
+    <code>huge_tree=True</code> removes lxml's default 256 MB cap.
+  </div>
+
+  {% if result %}
+  <pre class="result-block">{{ result | tojson(indent=2) }}</pre>
+  {% endif %}
+
+  <form method="POST" class="lab-form">
+    <label>XML Payload</label>
+    <textarea name="xml_payload" rows="16" class="code-input">{{ sample | e }}</textarea>
+    <button type="submit" class="btn btn-danger">Parse XML</button>
+  </form>
+
+  <div class="hint-box">
+    <b>Attack:</b> Paste the sample payload above and submit. Watch <code>elapsed_ms</code> grow.
+    Increase nesting depth (lol7, lol8, lol9) to push toward real DoS impact.
+    <br><b>Remediation:</b> <code>etree.XMLParser(resolve_entities=False)</code> or use <code>defusedxml</code>.
+  </div>
+</div>
+{% endblock %}

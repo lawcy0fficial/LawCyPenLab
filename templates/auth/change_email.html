@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Change Email{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v19.css') }}">
+{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+  <h1 style="margin:0;">Change Email Address <span class="sev p2" style="margin-left:8px;">P2 · ATO</span></h1>
+</div>
+
+<div class="grid grid-2">
+  <div class="panel">
+    <h2>Current Identity</h2>
+    <table style="width:100%;font-size:13px;">
+      <tr><td style="color:var(--dim);padding:6px 0;">Username</td><td><code>{{ user.username }}</code></td></tr>
+      <tr><td style="color:var(--dim);padding:6px 0;">Email</td><td><code>{{ user.email }}</code></td></tr>
+      <tr><td style="color:var(--dim);padding:6px 0;">Role</td><td><code>{{ user.role }}</code></td></tr>
+    </table>
+
+    <h2 style="margin-top:20px;">Update Email</h2>
+    <form method="post" style="display:flex;flex-direction:column;gap:10px;">
+      <label style="font-size:12px;color:var(--dim);">New email address</label>
+      <input type="text" name="email" placeholder="attacker@evil.example"
+             style="padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);">
+      <button type="submit" class="btn small">Update →</button>
+    </form>
+    {% if msg %}
+    <div class="flash ok" style="margin-top:12px;">{{ msg }}</div>
+    {% endif %}
+  </div>
+
+  <div class="panel">
+    <h2>Why this is P2</h2>
+    <p style="font-size:13px;color:var(--dim);">The email is changed immediately — no confirmation link is sent to the old address, no re-authentication required, no rate-limit. An attacker who can reach this endpoint (e.g. via CSRF or a borrowed/hijacked session) can silently rotate the victim's email address.</p>
+    <div class="vuln-callout">
+      <span class="sev p2" style="flex:none;align-self:flex-start;">P2</span>
+      <div style="font-size:12px;">
+        <b>Attack chain:</b> CSRF on /profile/change-email → victim's email changed to attacker-controlled address → attacker triggers password reset → full account takeover.
+      </div>
+    </div>
+    <div style="margin-top:14px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-620 · Unverified Password Change (generalised to identity)<br>Fix: send confirmation to old address, require current password</div>
+  </div>
+</div>
+{% endblock %}

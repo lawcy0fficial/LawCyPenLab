@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}SAML ACS — Signature Wrapping{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p1">P1</span>
+    <h2>SAML XML Signature Wrapping (XSW)</h2>
+    <div><span class="mono-dim">CWE-347 · Signature validates but wrong assertion processed · XSW variants 1-8</span></div>
+  </div>
+  <div class="vuln-info">
+    The SP validates the XML signature but processes the <b>first</b> <code>&lt;Assertion&gt;</code> found, not the
+    <em>signed</em> one. Insert an unsigned admin assertion before the legitimate signed crew assertion —
+    signature still validates, but admin access is granted.
+  </div>
+  <div class="hint-box">
+    <b>Attack:</b> Paste the <em>XSW Wrapped</em> payload below and submit. The signature covers
+    <code>#assertion-crew-uid-001</code> (still present and valid), but the injected unsigned
+    <code>admin-uid-999</code> assertion is processed first → admin session created.<br>
+    <b>Tool:</b> SAML Raider (Burp Suite extension) automates XSW1-XSW8 variants.
+  </div>
+</div>
+{% if result %}
+<div class="panel">
+  <h2>Processing Result</h2>
+  <pre class="result-block">{{ result | tojson(indent=2) }}</pre>
+</div>
+{% endif %}
+<div class="two-col">
+  <div class="panel">
+    <h2>Legitimate Response</h2>
+    <form method="POST" class="lab-form">
+      <textarea name="saml_response" rows="18" class="code-input">{{ sample | e }}</textarea>
+      <button type="submit" class="btn">Submit Legitimate</button>
+    </form>
+  </div>
+  <div class="panel">
+    <h2>XSW Wrapped (Attack)</h2>
+    <form method="POST" class="lab-form">
+      <textarea name="saml_response" rows="18" class="code-input">{{ wrapped | e }}</textarea>
+      <button type="submit" class="btn btn-danger">Submit XSW Payload</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

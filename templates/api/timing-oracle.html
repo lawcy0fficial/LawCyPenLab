@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Timing Oracle — Username Enumeration{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p3">P3</span>
+    <h2>Timing Oracle — Username Enumeration</h2>
+    <div><span class="mono-dim">CWE-203 · Response time differs when username exists · Side-channel attack</span></div>
+  </div>
+  <div class="vuln-info">
+    The <b>naive</b> endpoint runs hash comparison only when the username exists — creating a measurable
+    timing difference (~20ms) between valid and invalid usernames. The <b>constant-time</b> endpoint always
+    runs the same code path regardless of username existence, making timing attacks impractical.
+  </div>
+  <div class="hint-box">
+    <b>Known usernames to test:</b> <code>admin</code>, <code>k.mbeki</code>, <code>r.solis</code>, <code>j.vance</code><br>
+    <b>Unknown:</b> <code>alice</code>, <code>bob</code>, <code>hacker</code><br>
+    Compare response times between existing and non-existing users on the <em>naive</em> endpoint.
+    A difference &gt;15ms reliably indicates the username is valid.
+  </div>
+</div>
+<div class="two-col">
+  <div class="panel">
+    <h2>Test Username Timing</h2>
+    <div class="lab-form">
+      <label>Username</label>
+      <input id="username-in" value="admin" class="input-field">
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button onclick="probe('naive')" class="btn btn-danger">Naive Endpoint</button>
+        <button onclick="probe('safe')" class="btn">Constant-Time Endpoint</button>
+      </div>
+    </div>
+    <pre class="result-block" id="timing-result" style="margin-top:12px;min-height:80px">Results appear here…</pre>
+  </div>
+  <div class="panel">
+    <h2>Batch Enumeration</h2>
+    <p class="mono-dim">Test multiple usernames and compare timing:</p>
+    <button onclick="batchProbe()" class="btn btn-danger">Enumerate Common Usernames</button>
+    <pre class="result-block" id="batch-result" style="margin-top:12px;min-height:80px">Click to start batch…</pre>
+  </div>
+</div>
+{% block extra_scripts %}
+<script>
+var candidates = ['admin','root','administrator','k.mbeki','r.solis','t.okafor','j.vance','guest','alice','bob','charlie','hacker','test'];
+function probe(endpoint) {
+  var u = document.getElementById('username-in').value;
+  var t0 = performance.now();
+  fetch('/api/timing-oracle?endpoint='+endpoint, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({username:u})
+  }).then(r=>r.json()).then(d=>{
+    d.client_elapsed_ms = Math.round(performance.now()-t0);
+    document.getElementById('timing-result').textContent = JSON.stringify(d,null,2);
+  });
+}
+function batchProbe() {
+  var out = document.getElementById('batch-result');
+  out.textContent = 'Probing…
+';
+  var results = [];
+  var i = 0;
+  function next() {
+    if(i>=candidates.length){ out.textContent = JSON.stringify(results,null,2); return; }
+    var u = candidates[i++];
+    var t0 = performance.now();
+    fetch('/api/timing-oracle?endpoint=naive', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username:u})
+    }).then(r=>r.json()).then(d=>{
+      var ms = Math.round(performance.now()-t0);
+      results.push({username:u, client_ms:ms, server_ms:d.elapsed_ms, likely_exists: ms>15});
+      out.textContent = results.map(r=>
+        (r.likely_exists?'[EXISTS] ':'[------] ') + r.username.padEnd(16) + r.client_ms+'ms'
+      ).join('
+');
+      setTimeout(next, 50);
+    });
+  }
+  next();
+}
+</script>
+{% endblock %}
+{% endblock %}

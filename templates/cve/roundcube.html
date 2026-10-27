@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Webmail (CVE-2023-43770 Analog){% endblock %}
+{% block content %}
+<div class="pagehead">
+  <h1>AEGIS Webmail</h1>
+  <p>Station inter-crew messaging client · <span class="badge warn">CVE-2023-43770 / CVE-2024-37383 (Roundcube) analog</span></p>
+</div>
+<div class="grid grid-2">
+  <div class="panel">
+    <h2>Compose <span>Message</span></h2>
+    <form method="POST">
+      <label>Body (HTML rendered without sanitization)</label>
+      <textarea name="body" rows="4" placeholder="<img src=x onerror=alert(document.cookie)>"></textarea>
+      <button class="btn" type="submit">Send</button>
+    </form>
+    {% if compose_result %}<p class="mono-dim">{{ compose_result }}</p>{% endif %}
+  </div>
+  <div class="panel">
+    <h2>Inbox <span>Messages</span></h2>
+    {% for m in messages %}
+    <div style="padding:8px 0;border-bottom:1px solid var(--hairline);">
+      <div class="mono-dim">from {{ m['sender'] }} · #{{ m['id'] }}</div>
+      <div>{{ m['body']|safe }}</div>
+    </div>
+    {% else %}
+    <p class="mono-dim">No messages.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}SSRF Chain via Open Redirect{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p1">P1</span>
+    <h2>SSRF Chain via Open Redirect Bypass</h2>
+    <div><span class="mono-dim">CWE-918 + CWE-601 · Allow-list bypassed via redirect from trusted host</span></div>
+  </div>
+  <div class="vuln-info">
+    The SSRF endpoint enforces an allow-list of trusted hostnames. But an allow-listed host
+    (<code>external.aegis-station.ops</code>) has an open redirect at <code>/go?url=&lt;target&gt;</code>.
+    The server follows redirects — so the attacker submits the trusted host's URL, which redirects to an internal target.
+  </div>
+  <div class="hint-box">
+    <b>Allow-listed hosts:</b>
+    {% for h in allowlist %}<code>{{ h }}</code>{% if not loop.last %}, {% endif %}{% endfor %}<br><br>
+    <b>Attack URL (paste into field below):</b><br>
+    <code>http://{{ request.host }}/go?url=http://127.0.0.1:5000/latest/meta-data/iam/security-credentials/aegis-station-role</code><br><br>
+    <b>Remediation:</b> Disable redirect following (<code>allow_redirects=False</code>), or re-validate the final URL
+    after each redirect against the allow-list.
+  </div>
+</div>
+{% if result %}
+<div class="panel">
+  <h2>Result</h2>
+  <pre class="result-block">{{ result | tojson(indent=2) }}</pre>
+</div>
+{% endif %}
+<div class="panel">
+  <form method="POST" class="lab-form">
+    <label>Target URL (allow-listed host or bypass chain)</label>
+    <input name="url" value="{{ url_in | e }}" class="input-field input-wide"
+           placeholder="http://external.aegis-station.ops/go?url=http://127.0.0.1:5000/...">
+    <button type="submit" class="btn btn-danger">Fetch (follows redirects)</button>
+  </form>
+</div>
+{% endblock %}

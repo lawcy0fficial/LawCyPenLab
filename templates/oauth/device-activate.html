@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Device Authorization{% endblock %}
+{% block content %}
+<div style="max-width:440px;margin:60px auto">
+  <div class="panel" style="text-align:center">
+    <div style="font-family:Orbitron,monospace;font-size:1.4rem;color:var(--cyan);
+                text-shadow:var(--glow-c);margin-bottom:16px;letter-spacing:.1em">
+      AEGIS STATION
+    </div>
+    <h2 style="text-align:center;margin-bottom:4px">Device Authorization</h2>
+    <p class="mono-dim" style="text-align:center;margin-bottom:20px">
+      A device or application is requesting access to your AEGIS account.
+    </p>
+    {% if success %}
+    <div class="flash success" style="text-align:left">
+      ✓ Authorization granted to device. You may close this page.<br>
+      <b>Authorized as:</b> {{ authorized_as }}
+    </div>
+    {% elif error %}
+    <div class="flash danger">{{ error }}</div>
+    {% endif %}
+    {% if not success %}
+    <form method="POST" class="lab-form">
+      <label>Enter the code shown on your device</label>
+      <input name="user_code" value="{{ user_code | default('') }}"
+             placeholder="XXXX-XXXX"
+             class="input-field" style="max-width:100%;text-align:center;
+             font-size:1.2rem;letter-spacing:.2em;text-transform:uppercase"
+             autocomplete="off">
+      <button type="submit" class="btn" style="align-self:stretch;justify-content:center;
+              margin-top:8px">Authorize Device</button>
+    </form>
+    <p class="mono-dim" style="margin-top:16px;font-size:.7rem">
+      Only authorize devices you trust. The requesting application will gain access to your account.
+    </p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

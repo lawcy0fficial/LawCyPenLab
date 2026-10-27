@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Unicode Homograph Redirect{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p2">P2</span>
+    <h2>Unicode Homograph Open Redirect</h2>
+    <div><span class="mono-dim">CWE-601 · Lookalike Unicode chars pass domain substring check · Resolves to attacker domain</span></div>
+  </div>
+  <div class="vuln-info">
+    The allow-list checks if the URL string <em>contains</em> <code>aegis-station.ops</code>
+    using a simple substring match. Unicode homograph characters visually identical to ASCII
+    letters (e.g. <code>ɑ</code> U+0251 looks like <code>a</code>) pass the check but route to a different domain.
+    Distinct from the <code>//evil.com</code> scheme bypass — this one actively spoofs a trusted domain name.
+  </div>
+  <div class="hint-box">
+    <b>Homograph example:</b> <code>http://ɑegis-stɑtion.ops/</code> contains "aegis-station.ops" after NFKC normalisation?
+    Check with: <code>import unicodedata; unicodedata.normalize("NFKC","ɑ") == "a"</code> → True<br>
+    <b>Payloads to try:</b>
+    <ul>
+      <li><code>https://evil.example?aegis-station.ops=bypass</code> (query param trick)</li>
+      <li><code>https://ɑegis-station.ops.evil.example/</code> (subdomain trick)</li>
+    </ul>
+  </div>
+</div>
+{% if result %}
+<div class="panel">
+  <h2>Redirect Analysis</h2>
+  <pre class="result-block">{{ result | tojson(indent=2) }}</pre>
+</div>
+{% endif %}
+<div class="panel">
+  <form method="POST" class="lab-form">
+    <label>Redirect URL (must contain "aegis-station.ops" to bypass allow-list)</label>
+    <input name="url" value="{{ request.form.get('url','https://evil.example?aegis-station.ops') }}"
+           class="input-field input-wide">
+    <button class="btn btn-danger" type="submit">Test Redirect</button>
+  </form>
+</div>
+{% endblock %}

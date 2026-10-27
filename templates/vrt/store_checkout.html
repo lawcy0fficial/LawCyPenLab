@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Requisition Store{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vrt-lab.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-store.svg') }}" width="40" height="40" alt="">
+  <div>
+    <h1>Requisition Store <span class="sev p2" style="margin-left:8px;">P2 · Business Logic</span></h1>
+    <p>Order supplies against your crew credit balance.</p>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="panel">
+    <h2>Server Price List (reference)</h2>
+    <table style="width:100%;font-size:13px;">
+      {% for name, price in items.items() %}
+      <tr><td class="mono-dim">{{ name }}</td><td style="text-align:right;">{{ price }} cr</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+  <div class="panel">
+    <h2>Checkout</h2>
+    <form method="post">
+      <label class="mono-dim" style="display:block;font-size:12px;margin-bottom:4px;">Item</label>
+      <select name="item" style="width:100%;padding:8px;margin-bottom:10px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);">
+        {% for name in items %}<option value="{{ name }}">{{ name }}</option>{% endfor %}
+      </select>
+      <label class="mono-dim" style="display:block;font-size:12px;margin-bottom:4px;">Unit price (client-submitted)</label>
+      <input type="text" name="price" value="45.0" style="width:100%;padding:8px;margin-bottom:10px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);">
+      <label class="mono-dim" style="display:block;font-size:12px;margin-bottom:4px;">Quantity</label>
+      <input type="text" name="qty" value="1" style="width:100%;padding:8px;margin-bottom:12px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);">
+      <button type="submit" class="btn small">Submit Order</button>
+    </form>
+    {% if result %}
+    <pre class="code" style="margin-top:14px;">{{ result | tojson(indent=2) }}</pre>
+    {% endif %}
+    <div class="vrt-cwe">CWE-840 · price field is client-authoritative — server never re-checks it against the list above</div>
+  </div>
+</div>
+{% endblock %}

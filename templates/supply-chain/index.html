@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Supply Chain{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v20.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-supply-chain.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">Supply Chain & Vendor Portal</h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">Registered vendors, package manifests, webhook callbacks, and config merges.</p>
+  </div>
+</div>
+
+<div class="grid grid-2" style="margin-bottom:20px;">
+  {% for v in vendors %}
+  <div class="vendor-card {{ 'compromised' if v.compromised }}">
+    <div class="vendor-name">{{ v.name }} <span style="font-size:11px;color:var(--dim);">{{ v.id }}</span></div>
+    <div class="vendor-pkg"><code>{{ v.pkg }}</code></div>
+    {% if v.compromised %}
+    <p style="font-size:12px;color:var(--danger);margin:8px 0 0;">Package name lacks @scope — public registry takeover possible.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<div class="grid grid-2">
+  <div class="panel">
+    <h2>Vendor Webhook Test <span class="sev p1" style="margin-left:6px;">P1 · SSRF</span></h2>
+    <p style="font-size:12px;color:var(--dim);">Station sends a test POST to the vendor's callback URL — no allow-list, no private-range block.</p>
+    <form id="webhook-form" style="display:flex;flex-direction:column;gap:8px;">
+      <input type="text" id="wh-url" value="http://127.0.0.1:5000/internal/core-control" style="padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:12px;">
+      <button type="button" class="btn small" onclick="testWebhook()">Send Test →</button>
+    </form>
+    <pre class="code" id="wh-out" style="margin-top:10px;display:none;max-height:160px;overflow-y:auto;"></pre>
+    <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-918 · SSRF via vendor webhook URL</div>
+  </div>
+
+  <div class="panel">
+    <h2>Config Merge <span class="sev p2" style="margin-left:6px;">P2 · Prototype Pollution</span></h2>
+    <p style="font-size:12px;color:var(--dim);">Vendor config is deep-merged without blocking <code>__proto__</code> keys — any base-dict property can be poisoned.</p>
+    <textarea id="merge-body" rows="5" style="width:100%;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);padding:8px;font-family:'JetBrains Mono',monospace;font-size:12px;resize:vertical;">{"__proto__": {"role": "admin", "debug": true}}</textarea>
+    <button class="btn small" style="margin-top:8px;" onclick="testMerge()">Merge →</button>
+    <pre class="code" id="merge-out" style="margin-top:10px;display:none;"></pre>
+    <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-1321 · Prototype Pollution via deep merge</div>
+  </div>
+</div>
+
+<div class="panel" style="margin-top:18px;">
+  <h2>Package Manifest <span class="sev p2" style="margin-left:6px;">P2 · Dependency Confusion</span></h2>
+  <p style="font-size:12px;color:var(--dim);">Internal packages are listed without an <code>@scope</code> prefix — any of these names can be registered on the public npm registry at a higher version and will be resolved preferentially by automated build systems.</p>
+  <div class="dep-tree">
+    aegis-station-app@3.4.1<br>
+    ├── <span class="dep-vuln">aegis-parts-core@2.1.4</span>     <span style="color:var(--danger);">← no @scope, public name available</span><br>
+    ├── <span class="dep-vuln">aegis-medkit@1.0.8</span>          <span style="color:var(--danger);">← no @scope</span><br>
+    ├── <span class="dep-vuln">aegis-life-support@3.0.1</span>    <span style="color:var(--danger);">← no @scope</span><br>
+    ├── <span class="dep-vuln">aegis-telemetry-sdk@1.4.2</span>   <span style="color:var(--danger);">← no @scope</span><br>
+    └── @thermoflexsys/reactor-ctl@2.0.0  <span style="color:var(--cyan);">← scoped, safe</span>
+  </div>
+  <button class="btn small" style="margin-top:10px;" onclick="fetchPackages()">Fetch /api/packages →</button>
+  <pre class="code" id="pkg-out" style="margin-top:10px;display:none;"></pre>
+  <div style="margin-top:8px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-427 · Dependency Confusion / Uncontrolled Search Path</div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v20.js') }}"></script>
+<script>
+async function testWebhook() {
+  const url = document.getElementById('wh-url').value;
+  const out = document.getElementById('wh-out');
+  out.style.display='block'; out.textContent='Sending…';
+  const r = await fetch('/supply-chain/webhook-test', {
+    method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+    body:'webhook_url='+encodeURIComponent(url)
+  });
+  out.textContent = `HTTP ${r.status}\n\n` + JSON.stringify(await r.json(), null, 2);
+}
+async function testMerge() {
+  const body = document.getElementById('merge-body').value;
+  const out = document.getElementById('merge-out');
+  out.style.display='block'; out.textContent='Sending…';
+  const r = await fetch('/supply-chain/merge-config', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body
+  });
+  out.textContent = `HTTP ${r.status}\n\n` + JSON.stringify(await r.json(), null, 2);
+}
+async function fetchPackages() {
+  const out = document.getElementById('pkg-out');
+  out.style.display='block';
+  const r = await fetch('/api/packages');
+  out.textContent = `HTTP ${r.status}\n\n` + JSON.stringify(await r.json(), null, 2);
+}
+</script>
+{% endblock %}

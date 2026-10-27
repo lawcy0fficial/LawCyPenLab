@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Subdomain Takeover{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p3">P3</span>
+    <h2>Dangling DNS / Subdomain Takeover</h2>
+    <p class="mono-dim">CWE-350 · {{ candidates|length }} of {{ audit|length }} CNAME targets claimable</p>
+  </div>
+  <div class="vuln-info">
+    When a subdomain's CNAME points to a deprovisioned external service, an attacker can
+    register that service name and serve content under the victim's trusted domain —
+    inheriting cookie scope, bypassing CSP, and enabling phishing under a valid TLS cert.
+  </div>
+
+  {% if candidates %}
+  <div class="vuln-info" style="border-color:#e74c3c">
+    <b>⚠ Claimable now:</b>
+    {% for c in candidates %}<code>{{ c }}</code>{% if not loop.last %}, {% endif %}{% endfor %}
+  </div>
+  {% endif %}
+
+  <table class="data-table">
+    <tr><th>Subdomain</th><th>CNAME Target</th><th>Status</th><th>Impact</th></tr>
+    {% for sub, info in audit.items() %}
+    <tr>
+      <td><code>{{ sub }}</code></td>
+      <td><code>{{ info.cname_target }}</code></td>
+      <td>
+        <span class="badge {{ 'p1' if info.claimable else 'p3' }}">
+          {{ 'CLAIMABLE' if info.claimable else 'Active' }}
+        </span>
+      </td>
+      <td>{{ info.impact }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <div class="hint-box">
+    <b>Detection tools:</b> <code>subfinder</code> · <code>dnsx</code> · <code>subjack</code> · <code>can-i-take-over-xyz</code>
+    <br><b>Remediation:</b> Remove dangling DNS records immediately when underlying services are deprovisioned.
+    Automate DNS auditing in CI/CD. Restrict session cookies to the exact domain (not <code>.aegis-station.ops</code>).
+  </div>
+</div>
+{% endblock %}

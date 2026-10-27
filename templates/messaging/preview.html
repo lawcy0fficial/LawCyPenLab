@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Message Preview{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v20.css') }}">
+{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+  <a href="{{ url_for('messaging_index') }}" class="btn small secondary">← Messaging</a>
+  <h1 style="margin:0;">Template Preview <span class="sev p1" style="margin-left:8px;">P1 · SSTI</span></h1>
+</div>
+<div class="grid grid-2">
+  <div class="panel">
+    <h2>Template Input</h2>
+    <p style="font-size:12px;color:var(--dim);">Enter a Jinja2 template. The server renders it via <code>render_template_string()</code> with no sandboxing.</p>
+    <form method="get">
+      <textarea name="template" rows="5" style="width:100%;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);padding:8px;font-family:'JetBrains Mono',monospace;font-size:12px;margin-bottom:10px;resize:vertical;">{{ tmpl }}</textarea>
+      <button type="submit" class="btn small">Render →</button>
+    </form>
+    <div style="margin-top:12px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">
+      Try:<br>
+      <code>{{ '{{7*7}}' }}</code><br>
+      <code>{{ '{{config.SECRET_KEY}}' }}</code><br>
+      <code>{{ '{{lipsum.__globals__.os.popen("id").read()}}' }}</code>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Rendered Output</h2>
+    <pre class="code" style="min-height:120px;white-space:pre-wrap;">{{ rendered }}</pre>
+    <div style="margin-top:12px;font-size:11px;color:var(--danger);font-family:'JetBrains Mono',monospace;">CWE-1336 · SSTI → RCE — output above is server-side execution result</div>
+  </div>
+</div>
+{% endblock %}

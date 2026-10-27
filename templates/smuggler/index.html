@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}HTTP Request Smuggling{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v23.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-smuggler.svg') }}" width="52" height="52" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">HTTP Request Smuggling <span class="sev p1" style="margin-left:8px;">P1 · CWE-444</span></h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">Front-end / back-end desynchronisation — CL.TE · TE.CL · H2.CL variants with live PoC builder.</p>
+  </div>
+</div>
+
+<!-- desync type selector -->
+<div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+  <button class="btn small" onclick="loadSmuggleTemplate('cl_te')"><span class="desync-badge cl-te">CL.TE</span></button>
+  <button class="btn small secondary" onclick="loadSmuggleTemplate('te_cl')"><span class="desync-badge te-cl">TE.CL</span></button>
+  <button class="btn small secondary" onclick="loadSmuggleTemplate('h2_cl')"><span class="desync-badge h2-cl">H2.CL</span></button>
+</div>
+
+<!-- desync visualisation -->
+<div id="smuggle-vis" style="margin-bottom:18px;"></div>
+
+<div class="grid grid-2" style="gap:18px;margin-bottom:20px;">
+  <!-- PoC request builder -->
+  <div class="panel">
+    <h2 style="font-size:13px;margin-bottom:10px;">Raw Request Builder</h2>
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <div style="flex:1;">
+        <label style="font-size:10px;color:var(--dim);display:block;margin-bottom:3px;">Content-Length</label>
+        <input id="cl-val" type="text" value="6" style="width:100%;padding:6px;background:var(--panel-2);border:1px solid var(--cyan-dim);color:var(--cyan);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:12px;">
+      </div>
+      <div style="flex:1;">
+        <label style="font-size:10px;color:var(--dim);display:block;margin-bottom:3px;">Transfer-Encoding</label>
+        <input id="te-val" type="text" value="chunked" style="width:100%;padding:6px;background:var(--panel-2);border:1px solid rgba(255,92,92,.4);color:var(--danger);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:12px;">
+      </div>
+    </div>
+    <div class="req-builder">
+      <textarea id="smuggle-ta" rows="12" placeholder="HTTP request with conflicting CL/TE…">POST / HTTP/1.1
+Host: aegis-station.local
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 6
+Transfer-Encoding: chunked
+
+0
+
+GETE</textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="btn small" onclick="sendSmuggleTest()">Simulate Desync →</button>
+      <a href="{{ url_for('smuggler_backdoor') }}" class="btn small secondary" target="_blank">Backdoor Endpoint →</a>
+    </div>
+    <pre class="code" id="smuggle-out" style="margin-top:10px;display:none;font-size:11px;max-height:180px;overflow-y:auto;"></pre>
+  </div>
+
+  <!-- impact + attack chain -->
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    <div class="panel">
+      <h2 style="font-size:13px;margin-bottom:10px;">Attack Chain</h2>
+      <div style="counter-reset:chain;">
+        {% set attack_chain = [
+          ["Send ambiguous request","Front-end reads Content-Length (6 bytes). Back-end reads Transfer-Encoding, consumes chunk 0-term as terminator."],
+          ["Leftover bytes poison queue","Bytes after the chunk terminator are buffered as the start of the NEXT request on the back-end TCP connection."],
+          ["Victim request corrupted","The next victim request is prepended with the attacker smuggled bytes - rewriting their method, path, or headers."],
+          ["Escalation","Attacker injects Authorization header into victim request, gaining the session or triggering internal admin actions."]
+        ] %}
+        {% for step in attack_chain %}
+        <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--hairline);font-size:12px;">
+          <div style="width:22px;height:22px;border-radius:50%;background:rgba(255,92,92,.12);border:1px solid var(--danger);color:var(--danger);font-family:'JetBrains Mono',monospace;font-size:11px;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px;">{{ loop.index }}</div>
+          <div><strong style="display:block;margin-bottom:2px;">{{ step[0] }}</strong><span style="color:var(--dim);">{{ step[1] }}</span></div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="panel">
+      <h2 style="font-size:13px;margin-bottom:8px;">Bypass Variants</h2>
+      <table style="width:100%;font-size:11px;border-collapse:collapse;font-family:'JetBrains Mono',monospace;">
+        {% for row in [
+          ('CL.TE','Front uses CL, back uses TE','Most common on nginx→gunicorn'),
+          ('TE.CL','Front uses TE, back uses CL','Apache HTTPd → Tomcat'),
+          ('H2.CL','HTTP/2 front strips CL','Cloud CDNs, h2c connections'),
+          ('TE.TE (obfuscated)','Both read TE, one ignores obfuscation','Transfer-Encoding: xchunked'),
+        ] %}
+        <tr style="border-bottom:1px solid rgba(35,43,61,.5);">
+          <td style="padding:7px 0;color:var(--amber);">{{ row[0] }}</td>
+          <td style="padding:7px 8px;color:var(--dim);">{{ row[1] }}</td>
+          <td style="padding:7px 0;color:var(--dim);font-size:10px;">{{ row[2] }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-444 · Inconsistent Interpretation of HTTP Requests</div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v23.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  loadSmuggleTemplate('cl_te');
+});
+</script>
+{% endblock %}

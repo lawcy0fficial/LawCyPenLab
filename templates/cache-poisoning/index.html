@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% block title %}Cache Poisoning{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v23.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-cache-poison.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">Web Cache Poisoning <span class="sev p2" style="margin-left:8px;">P2 · CWE-524</span></h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">Unkeyed headers reflected into responses that get cached — attacker poisons the shared cache for all users.</p>
+  </div>
+</div>
+
+<!-- attack flow diagram -->
+<div class="cache-diagram" style="margin-bottom:20px;">
+  <div class="cache-node attacker">
+    <div style="font-size:9px;font-family:'JetBrains Mono',monospace;letter-spacing:.1em;color:var(--danger);margin-bottom:6px;">ATTACKER</div>
+    <div style="font-size:12px;color:var(--dim);">Sends request with<br><code style="color:var(--danger);">X-Forwarded-Host: evil.example</code></div>
+    <span class="cache-hit poisoned" style="margin-top:8px;display:inline-block;">POISONS CACHE</span>
+  </div>
+  <div class="cache-arrow">→</div>
+  <div class="cache-node cache-box" style="text-align:center;">
+    <div style="font-size:9px;font-family:'JetBrains Mono',monospace;letter-spacing:.1em;color:var(--amber);margin-bottom:6px;">SHARED CACHE</div>
+    <div style="font-size:12px;color:var(--dim);">Stores poisoned response<br><em>(key: GET /api/cache-test)</em></div>
+    <div style="font-size:10px;color:var(--danger);margin-top:6px;font-family:'JetBrains Mono',monospace;">login_url: http://evil.example/login</div>
+  </div>
+  <div class="cache-arrow">→</div>
+  <div class="cache-node victim">
+    <div style="font-size:9px;font-family:'JetBrains Mono',monospace;letter-spacing:.1em;color:var(--cyan);margin-bottom:6px;">VICTIM</div>
+    <div style="font-size:12px;color:var(--dim);">Receives poisoned<br>cache response</div>
+    <span class="cache-hit poisoned" style="margin-top:8px;display:inline-block;">CACHE HIT ☠</span>
+  </div>
+</div>
+
+<div class="grid grid-2" style="gap:18px;">
+  <!-- X-Forwarded-Host demo -->
+  <div class="panel">
+    <h2 style="font-size:13px;margin-bottom:8px;">X-Forwarded-Host Poisoning</h2>
+    <p style="font-size:12px;color:var(--dim);">The API endpoint reflects <code>X-Forwarded-Host</code> into response URLs but this header is <strong>not</strong> part of the cache key. First send a poisoned request, then send a clean one — both return the poisoned URLs.</p>
+
+    <div class="unkeyed-header"><span class="key-label">UNKEYED</span><code>X-Forwarded-Host: evil.example</code></div>
+    <div class="unkeyed-header"><span class="key-label">UNKEYED</span><code>X-Forwarded-Proto: https</code></div>
+    <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn small" onclick="testCachePoison('evil.example')">Poison with evil.example →</button>
+      <button class="btn small secondary" onclick="testCachePoison(null)">Clean request (should be poisoned)</button>
+      <button class="btn small secondary" onclick="testCachePoison('javascript:alert(1)')">XSS via host poisoning</button>
+    </div>
+    <pre class="code" id="cache-out" style="margin-top:12px;display:none;font-size:11px;max-height:220px;overflow-y:auto;"></pre>
+    <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-524 · Use of Cache Containing Sensitive Information<br>Unkeyed header reflected in: login_url, cdn_script, reset_link</div>
+  </div>
+
+  <!-- Why the cache is vulnerable -->
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div class="panel">
+      <h2 style="font-size:13px;margin-bottom:8px;">Cache Key vs Response Content</h2>
+      <table style="width:100%;font-size:12px;border-collapse:collapse;">
+        <thead><tr style="background:var(--panel-2);">
+          <th style="padding:7px 10px;text-align:left;font-size:10px;letter-spacing:.06em;color:var(--dim);">HEADER</th>
+          <th style="padding:7px 10px;text-align:center;font-size:10px;letter-spacing:.06em;color:var(--dim);">IN CACHE KEY</th>
+          <th style="padding:7px 10px;text-align:center;font-size:10px;letter-spacing:.06em;color:var(--dim);">IN RESPONSE</th>
+        </tr></thead>
+        <tbody>
+          {% for row in [
+            ('Host','✓','✓'),
+            ('Accept-Encoding','✓','Vary header'),
+            ('X-Forwarded-Host','✗ MISSING','✓ login_url'),
+            ('X-Forwarded-Proto','✗ MISSING','✓ base_url'),
+            ('X-Custom-Prefix','✗ MISSING','✓ redirect_to'),
+          ] %}
+          <tr style="border-bottom:1px solid rgba(35,43,61,.5);">
+            <td style="padding:8px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;">{{ row[0] }}</td>
+            <td style="padding:8px 10px;text-align:center;color:{{ 'var(--danger)' if '✗' in row[1] else 'var(--cyan)' }};font-family:'JetBrains Mono',monospace;font-size:11px;">{{ row[1] }}</td>
+            <td style="padding:8px 10px;text-align:center;color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:11px;">{{ row[2] }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="panel">
+      <h2 style="font-size:13px;margin-bottom:8px;">Impact Scenarios</h2>
+      <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;">
+        {% for s in ['JavaScript CDN URL poisoned → victim loads attacker\'s JS → stored XSS for all users', 'Login URL poisoned → victim credentials sent to attacker\'s phishing page', 'Password-reset link poisoned → attacker receives reset tokens for all who click', 'Admin panel URL poisoned → victim\'s admin session sent to attacker\'s server'] %}
+        <div style="display:flex;gap:8px;padding:8px 10px;border:1px solid var(--hairline);border-radius:var(--radius);">
+          <span style="color:var(--danger);flex:none;">☠</span><span style="color:var(--dim);">{{ s }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v23.js') }}"></script>
+{% endblock %}

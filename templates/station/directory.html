@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Station Directory — LDAP{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p2">P2</span>
+    <h2>Station Directory — LDAP Injection</h2>
+    <p class="mono-dim">CWE-90 · Raw uid in filter (&amp;(uid=INPUT)(active=true))</p>
+  </div>
+  <div class="vuln-info">
+    Input is embedded directly into an LDAP filter string without escaping.
+    A wildcard <code>*</code> in the uid position matches all entries; closing the predicate
+    and adding a second condition bypasses authentication entirely.
+  </div>
+
+  <div class="hint-box">
+    <b>Payloads:</b>
+    <code>engineer</code> (normal) ·
+    <code>*</code> (wildcard — dumps all) ·
+    <code>*)(uid=*</code> (predicate bypass) ·
+    <code>admin)(|(uid=*</code> (OR injection)
+  </div>
+
+  {% if error %}<div class="flash error">{{ error }}</div>{% endif %}
+  {% if filter_used %}<p class="mono-dim">Filter evaluated: <code>{{ filter_used }}</code></p>{% endif %}
+
+  {% if results %}
+  <table class="data-table">
+    <tr><th>uid</th><th>cn</th><th>role</th><th>clearance</th><th>secret</th></tr>
+    {% for r in results %}
+    <tr>
+      <td><code>{{ r.uid }}</code></td>
+      <td>{{ r.cn }}</td>
+      <td>{{ r.role }}</td>
+      <td><span class="badge {{ 'p1' if r.clearance=='ROOT' else 'p2' if r.clearance=='BLUE' else 'p3' }}">{{ r.clearance }}</span></td>
+      <td><code>{{ r.secret }}</code></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  <form method="POST" class="lab-form">
+    <label>Search by uid</label>
+    <input name="uid" value="{{ uid_input | default('') }}" placeholder="e.g. engineer" class="input-field">
+    <button type="submit" class="btn">Search</button>
+  </form>
+</div>
+{% endblock %}

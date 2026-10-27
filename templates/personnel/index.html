@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Personnel Records{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v20.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-personnel.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">Personnel Records</h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">HR-classified crew files — clearance level, salary, and notes. No ownership checks enforced.</p>
+  </div>
+  <a href="{{ url_for('personnel_export') }}" class="btn small" style="margin-left:auto;">Export All →</a>
+</div>
+
+{% for r in records %}
+<div class="personnel-card">
+  <div class="personnel-avatar">{{ r.name[0] }}</div>
+  <div>
+    <div class="personnel-name">{{ r.name }}</div>
+    <div class="personnel-role">{{ r.username }} · {{ r.role }} · Clearance: <span style="color:var(--amber)">{{ r.clearance }}</span></div>
+  </div>
+  <div style="margin-left:auto;text-align:right;">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--cyan);">{{ r.salary_cr }} cr/cycle</div>
+    <div style="font-size:11px;color:var(--dim);">ID {{ r.id }}</div>
+  </div>
+  <div class="personnel-actions">
+    <a href="{{ url_for('personnel_record', pid=r.id) }}" class="btn small secondary">View</a>
+    <button class="btn small" onclick="showMassAssign({{ r.id }}, '{{ r.username }}')">Edit →</button>
+  </div>
+</div>
+{% endfor %}
+
+<div id="mass-assign-panel" class="panel" style="margin-top:20px;display:none;">
+  <h2 style="margin-bottom:4px;">Edit Record <span class="sev p1" style="margin-left:6px;">P1 · Mass Assignment</span></h2>
+  <p style="font-size:12px;color:var(--dim);margin-bottom:12px;">POST any JSON — all keys are applied directly to the record. Change <code>role</code> to <code>"admin"</code> or <code>clearance</code> to <code>"ALPHA"</code>.</p>
+  <div style="display:flex;gap:10px;align-items:flex-start;">
+    <textarea id="ma-body" rows="7" style="flex:1;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);padding:8px;font-family:'JetBrains Mono',monospace;font-size:12px;resize:vertical;">{"role": "admin", "clearance": "ALPHA", "salary_cr": 99999}</textarea>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <button class="btn small" onclick="sendMassAssign()">Send PATCH →</button>
+      <button class="btn small secondary" onclick="document.getElementById('mass-assign-panel').style.display='none'">Cancel</button>
+    </div>
+  </div>
+  <pre class="code" id="ma-out" style="margin-top:10px;display:none;"></pre>
+  <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-915 · Mass Assignment — update endpoint applies all JSON keys without an allow-list</div>
+</div>
+
+<div class="vuln-callout" style="margin-top:16px;">
+  <span class="sev p2" style="flex:none;align-self:flex-start;">P2</span>
+  <p>Every record is readable by any authenticated crew member — no ownership check (BOLA/IDOR). Tap <b>View</b> on any record you don't own. Salary, clearance, and internal notes are all included.</p>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v20.js') }}"></script>
+<script>
+let _activePid = 1;
+function showMassAssign(pid, uname) {
+  _activePid = pid;
+  document.getElementById('mass-assign-panel').style.display = 'block';
+  document.getElementById('mass-assign-panel').scrollIntoView({behavior:'smooth'});
+}
+async function sendMassAssign() {
+  const body = document.getElementById('ma-body').value;
+  const out = document.getElementById('ma-out');
+  out.style.display='block'; out.textContent='Sending…';
+  const r = await fetch(`/personnel/${_activePid}/update`, {
+    method:'POST', headers:{'Content-Type':'application/json'}, body
+  });
+  out.textContent = `HTTP ${r.status}\n\n` + JSON.stringify(await r.json(), null, 2);
+}
+</script>
+{% endblock %}

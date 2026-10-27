@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}Gopher SSRF → Redis{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p1">P1</span>
+    <h2>Gopher Protocol SSRF → Redis Injection</h2>
+    <p class="mono-dim">CWE-918 · gopher:// sends raw TCP bytes · Works against Redis, SMTP, FastCGI, Memcached</p>
+  </div>
+  <div class="vuln-info">
+    <code>gopher://host:port/_&lt;URL-encoded payload&gt;</code> — the underscore is the gopher type byte,
+    everything after is sent verbatim to the TCP socket. An SSRF primitive that accepts gopher://
+    becomes a universal protocol relay.
+  </div>
+
+  <div class="hint-box">
+    <b>Quick payloads — click URL to fill:</b>
+    <table class="data-table">
+      <tr><th>Command</th><th>Gopher URL</th></tr>
+      {% for cmd, url in examples %}
+      <tr>
+        <td><code>{{ cmd }}</code></td>
+        <td><code class="clickable" onclick="document.querySelector('[name=url]').value='{{ url }}'">{{ url[:80] }}…</code></td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  {% if result %}
+  <pre class="result-block">{{ result | tojson(indent=2) }}</pre>
+  {% endif %}
+
+  <form method="POST" class="lab-form">
+    <label>URL (gopher:// or http://)</label>
+    <input name="url" value="{{ url_in | default('') }}" placeholder="gopher://127.0.0.1:6379/_%2A1..." class="input-field input-wide">
+    <button type="submit" class="btn btn-danger">Send</button>
+  </form>
+</div>
+{% endblock %}

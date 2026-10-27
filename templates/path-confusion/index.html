@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block title %}Path Confusion{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v23.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-path-confusion.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">Path Confusion / Normalisation Bypass <span class="sev p2" style="margin-left:8px;">P2</span></h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">WAF sees <code>/admin</code> — blocked. Back-end resolves <code>/%61dmin</code> — allowed. Seven bypass techniques.</p>
+  </div>
+</div>
+
+<div class="grid grid-2" style="gap:18px;margin-bottom:20px;">
+  <!-- URL tester -->
+  <div class="panel">
+    <h2 style="font-size:13px;margin-bottom:10px;">Path Access Control Tester</h2>
+    <p style="font-size:12px;color:var(--dim);">Enter any path. The WAF checks the literal string; the back-end resolves it after normalisation. A bypass means the WAF says OK but the back-end reaches a blocked endpoint.</p>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <div class="url-bar" style="flex:1;">
+        <span class="scheme">https</span>
+        <span class="host">aegis-station.local</span>
+        <input id="path-input" type="text" value="/admin" style="flex:1;padding:8px 6px;background:transparent;border:none;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:12px;outline:none;">
+      </div>
+      <button class="btn small" onclick="testPathConfusion()">Check →</button>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+      {% for path in ['/admin', '/%61dmin', '//admin', '/api/v1/./admin/secret', '/admin/../admin', '/%2fadmin', '/ADMIN'] %}
+      <button class="btn small secondary" style="font-family:'JetBrains Mono',monospace;font-size:10px;" onclick="testPathConfusion('{{ path }}')">{{ path }}</button>
+      {% endfor %}
+    </div>
+    <pre class="code" id="path-out" style="display:none;font-size:11px;max-height:200px;overflow-y:auto;"></pre>
+  </div>
+
+  <!-- bypass reference grid -->
+  <div class="panel">
+    <h2 style="font-size:13px;margin-bottom:10px;">Bypass Techniques</h2>
+    <div class="bypass-grid">
+      {% for item in [
+        ('%61dmin','URL encoding','%61 = a in ASCII — WAF sees literal %61dmin'),
+        ('//admin','Double slash','Collapsed to /admin by most back-ends'),
+        ('/api/./admin','Dot segment','./  resolves to current dir, removed'),
+        ('/api/../admin','Dot-dot','../ traverses up one level'),
+        ('/admin/','Trailing slash','WAF blocks /admin not /admin/'),
+        ('/ADMIN','Case variation','Case-insensitive OS resolves to /admin'),
+        ('/admin%09','Tab character','%09 strips on some back-ends'),
+        ('/%2fadmin','Encoded slash','%2f = / — parsed after WAF in some configs'),
+      ] %}
+      <div class="bypass-card">
+        <div class="bypass-input">{{ item[0] }}</div>
+        <div class="bypass-result">→ /admin</div>
+        <div class="bypass-note">{{ item[2] }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-706 · Improper Path Resolution Before File Access<br>CWE-284 · Access Control bypassed by normalisation mismatch</div>
+  </div>
+</div>
+
+<div class="panel">
+  <h2 style="font-size:13px;margin-bottom:10px;">Why normalisation order matters</h2>
+  <div class="grid grid-2" style="gap:14px;">
+    <div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--danger);margin-bottom:8px;">VULNERABLE — WAF checks BEFORE decode</div>
+      <div style="font-size:12px;color:var(--dim);line-height:1.8;">
+        1. Request arrives: <code>GET /%61dmin HTTP/1.1</code><br>
+        2. WAF checks: <code>/%61dmin</code> ≠ <code>/admin</code> → <strong style="color:var(--cyan);">ALLOWED</strong><br>
+        3. Back-end decodes: <code>%61</code> → <code>a</code> → <code>/admin</code><br>
+        4. Back-end serves: <strong style="color:var(--danger);">ADMIN PAGE</strong>
+      </div>
+    </div>
+    <div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--cyan);margin-bottom:8px;">SAFE — WAF checks AFTER normalise</div>
+      <div style="font-size:12px;color:var(--dim);line-height:1.8;">
+        1. Request arrives: <code>GET /%61dmin HTTP/1.1</code><br>
+        2. WAF decodes: <code>%61</code> → <code>a</code> → <code>/admin</code><br>
+        3. WAF checks: <code>/admin</code> = <code>/admin</code> → <strong style="color:var(--danger);">BLOCKED</strong><br>
+        4. Attacker receives: <strong style="color:var(--cyan);">403</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v23.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Kiosk Login v2 — Lockout Bypass{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p2">P2</span>
+    <h2>Account Lockout Bypass — Case Variation</h2>
+    <p class="mono-dim">CWE-307 · Lock key is case-sensitive · SQLite COLLATE NOCASE matches any case</p>
+  </div>
+  <div class="vuln-info">
+    Lockout counter keyed on the <em>raw submitted string</em>. "admin" and "Admin" are different keys,
+    but both match the same DB row (SQLite COLLATE NOCASE). Three fresh guesses per case variant.
+  </div>
+
+  {% if result %}
+  <pre class="result-block">{{ result | tojson(indent=2) }}</pre>
+  {% endif %}
+
+  <form method="POST" class="lab-form">
+    <label>Username</label>
+    <input name="username" value="{{ username | default('admin') }}" class="input-field">
+    <label>Password</label>
+    <input type="password" name="password" class="input-field">
+    <button type="submit" class="btn">Login</button>
+  </form>
+
+  <div class="hint-box">
+    <b>Attack sequence:</b>
+    <ol>
+      <li>Submit <code>admin</code> / wrong-pass three times → locked</li>
+      <li>Submit <code>Admin</code> / wrong-pass → fresh counter, 3 more tries</li>
+      <li>Repeat with <code>ADMIN</code>, <code>aDmIn</code>, etc. — unlimited retries</li>
+      <li>Find the password (<code>aegis2024</code>) and submit with any case variant</li>
+    </ol>
+    <b>Remediation:</b> Normalise username to lowercase <em>before</em> incrementing the lockout counter.
+  </div>
+</div>
+{% endblock %}

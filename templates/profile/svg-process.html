@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}SVG Upload — Server-Side XXE{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p1">P1</span>
+    <h2>SVG Upload — Server-Side XXE Processing</h2>
+    <p class="mono-dim">CWE-611 · lxml parses SVG to extract &lt;title&gt; metadata · External entity resolves file:///etc/passwd</p>
+  </div>
+  <div class="vuln-info">
+    The server parses uploaded SVG files with <code>lxml</code> (<code>resolve_entities=True</code>)
+    to extract the <code>&lt;title&gt;</code> element for thumbnail metadata.
+    An XXE payload in the title causes the parser to resolve <code>file:///etc/passwd</code>
+    into the extracted text — bypassing upload filters that only check for <code>&lt;script&gt;</code> tags.
+    <br><b>Distinct from</b> the SVG XSS in <code>/vrt/avatar</code> (that's client-side; this is server-side).
+  </div>
+
+  {% if result %}
+  <pre class="result-block">{{ result | tojson(indent=2) }}</pre>
+  {% endif %}
+
+  <form method="POST" enctype="multipart/form-data" class="lab-form">
+    <label>Paste SVG (with XXE payload)</label>
+    <textarea name="svg_content" rows="16" class="code-input">{{ sample | e }}</textarea>
+    <label>Or upload .svg file</label>
+    <input type="file" name="svg_file" accept=".svg" class="input-field">
+    <button type="submit" class="btn btn-danger">Process SVG</button>
+  </form>
+
+  <div class="hint-box">
+    <b>Key lines to inject:</b><br>
+    <code>&lt;!DOCTYPE svg [&lt;!ENTITY xxe SYSTEM "file:///etc/passwd"&gt;]&gt;</code><br>
+    <code>&lt;title&gt;&amp;xxe;&lt;/title&gt;</code>
+  </div>
+</div>
+{% endblock %}

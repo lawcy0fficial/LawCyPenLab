@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}VRT Bug Bounty Lab{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vrt-lab.css') }}">
+{% endblock %}
+{% block content %}
+<div class="vrt-hero">
+  <img src="{{ url_for('static', filename='img/svg/icon-shield-bug.svg') }}" alt="">
+  <div>
+    <h1>VRT Bug Bounty Lab</h1>
+    <p>Each finding below is written up the way it would appear in a real triage queue — priority, VRT category, and reproduction steps — using Bugcrowd's Vulnerability Rating Taxonomy scale (P1 Critical → P3 Medium).</p>
+  </div>
+  <div class="vrt-stats">
+    <div class="vrt-stat p1"><b>4</b><span>P1</span></div>
+    <div class="vrt-stat p2"><b>4</b><span>P2</span></div>
+    <div class="vrt-stat p3"><b>2</b><span>P3</span></div>
+  </div>
+</div>
+
+<div class="vrt-filters">
+  <button class="vrt-filter active" data-sev="all">All findings</button>
+  <button class="vrt-filter" data-sev="p1">P1 · Critical</button>
+  <button class="vrt-filter" data-sev="p2">P2 · High</button>
+  <button class="vrt-filter" data-sev="p3">P3 · Medium</button>
+</div>
+
+<div class="grid grid-2">
+
+  <div class="panel vrt-card" data-sev="p1">
+    <div class="vrt-card-top"><h2>Server-Side Request Forgery</h2><span class="sev p1">P1 · Critical</span></div>
+    <p class="vrt-cat">Server-Side Request Forgery (SSRF)</p>
+    <p class="mono-dim">The relay diagnostics tool fetches any URL the caller supplies with no allow-list, letting an attacker reach internal-only services like the reactor core control panel.</p>
+    <a href="{{ url_for('vrt_ssrf') }}" class="btn small">Open Lab →</a>
+    <div class="vrt-cwe">CWE-918 · impact: internal service access, credential/metadata theft</div>
+  </div>
+
+  <div class="panel vrt-card" data-sev="p1">
+    <div class="vrt-card-top"><h2>JWT "alg=none" Auth Bypass</h2><span class="sev p1">P1 · Critical</span></div>
+    <p class="vrt-cat">Broken Authentication and Session Management</p>
+    <p class="mono-dim">The verifier trusts the client-supplied <code>alg</code> header. Set it to <code>none</code> and strip the signature — the forged token is accepted with zero secret knowledge.</p>
+    <a href="#" onclick="testJwtNone()" class="btn small">Test via API →</a>
+    <pre class="code" id="jwt-result" style="margin-top:10px;display:none;"></pre>
+    <div class="vrt-cwe">CWE-347 · impact: full authentication bypass, privilege escalation to admin</div>
+  </div>
+
+  <div class="panel vrt-card" data-sev="p1">
+    <div class="vrt-card-top"><h2>Medical Records IDOR</h2><span class="sev p1">P1 · Critical</span></div>
+    <p class="vrt-cat">Insecure Direct Object Reference / Sensitive Data Exposure</p>
+    <p class="mono-dim">Any authenticated crew member can view any other crew member's confidential medical record by changing the numeric ID — no ownership check at all.</p>
+    <a href="/vrt/medical/1" class="btn small" target="_blank">Record #1 →</a>
+    <a href="/vrt/medical/4" class="btn small secondary" style="margin-left:8px;" target="_blank">Record #4 →</a>
+    <div class="vrt-cwe">CWE-639 · impact: mass PII/PHI disclosure across all crew</div>
+  </div>
+
+  <div class="panel vrt-card" data-sev="p1">
+    <div class="vrt-card-top"><h2>Reactor Core Control (internal-only, exposed)</h2><span class="sev p1">P1 · Critical</span></div>
+    <p class="vrt-cat">Security Misconfiguration — exposed internal service</p>
+    <p class="mono-dim">A panel meant only for internal callers has no network restriction at all — reachable directly, and the perfect SSRF target for the finding above.</p>
+    <a href="/internal/core-control" class="btn small" target="_blank">View panel →</a>
+    <div class="vrt-cwe">CWE-284 · impact: reactor override key disclosure</div>
+  </div>
+
+  <div class="panel vrt-card" data-sev="p2">
+    <div class="vrt-card-top"><h2>Stored XSS via SVG Avatar</h2><span class="sev p2">P2 · High</span></div>
+    <p class="vrt-cat">Cross-Site Scripting (Stored)</p>
+    <p class="mono-dim">Avatar uploads accept <code>.svg</code> and render the file inline unsanitized. A <code>&lt;script&gt;</code> or <code>onload=</code> handler embedded in the SVG executes for every viewer.</p>
+    <a href="{{ url_for('vrt_avatar_upload') }}" class="btn small">Open Lab →</a>
+    <div class="vrt-cwe">CWE-79 · impact: session hijack, stored payload persists for all viewers</div>
+  </div>
+
+  <div class="panel vrt-card" data-sev="p2">
+    <div class="vrt-card-top"><h2>CORS Misconfiguration</h2><span class="sev p2">P2 · High</span></div>
+    <p class="vrt-cat">Broken Access Control — CORS</p>
+    <p class="mono-dim">The crew-data API reflects the <code>Origin</code> header back and sets <code>Allow-Credentials: true</code> — any site can read authenticated crew data cross-origin.</p>
+    <a href="#" onclick="testCors()" class="btn small">Test via API →</a>
+    <pre class="code" id="cors-result" style="margin-top:10px;display:none;"></pre>
+    <div class="vrt-cwe">CWE-942 · impact: cross-origin data theft with credentials</div>
+  </div>
+
+  <div class="panel vrt-card" data-sev="p2">
+    <div class="vrt-card-top"><h2>Requisition Store Price Manipulation</h2><span class="sev p2">P2 · High</span></div>
+    <p class="vrt-cat">Business Logic Errors</p>
+    <p class="mono-dim">Checkout trusts a client-submitted <code>price</code> field instead of the server's price list — buy a repair kit for 1 credit, or submit a negative total.</p>
+    <a href="{{ url_for('vrt_store_checkout') }}" class="btn small">Open Lab →</a>
+    <div class="vrt-cwe">CWE-840 · impact: financial loss, negative-total credit abuse</div>
+  </div>
+
+  <div class="panel vrt-card" data-sev="p2">
+    <div class="vrt-card-top"><h2>Password Reset Host Header Poisoning</h2><span class="sev p2">P2 · High</span></div>
+    <p class="vrt-cat">Server Security Misconfiguration</p>
+    <p class="mono-dim">The reset link embeds the raw <code>Host</code> header instead of a fixed domain. A spoofed Host poisons the link a victim would receive by email.</p>
+    <a href="{{ url_for('vrt_reset_request') }}" class="btn small">Open Lab →</a>
+    <div class="vrt-cwe">CWE-644 · impact: account takeover via poisoned reset link</div>
+  </div>
+
+  <div class="panel vrt-card" data-sev="p3">
+    <div class="vrt-card-top"><h2>Verbose Stack Trace Disclosure</h2><span class="sev p3">P3 · Medium</span></div>
+    <p class="vrt-cat">Server Security Misconfiguration</p>
+    <p class="mono-dim">Unvalidated input reaches an unhandled exception, and <code>debug=True</code> turns that into a full interactive traceback for any visitor.</p>
+    <a href="/vrt/diagnostics?orbit_code=abc" class="btn small" target="_blank">Trigger →</a>
+    <div class="vrt-cwe">CWE-209/CWE-215 · impact: source/secret disclosure, possible RCE via debugger console</div>
+  </div>
+
+  <div class="panel vrt-card" data-sev="p3">
+    <div class="vrt-card-top"><h2>Predictable Remember-Me Token</h2><span class="sev p3">P3 · Medium</span></div>
+    <p class="vrt-cat">Broken Authentication and Session Management</p>
+    <p class="mono-dim">The token is <code>md5(username + fixed epoch)</code> — fully computable offline for any known username, no randomness at all.</p>
+    <a href="#" onclick="testRememberMe()" class="btn small">Test via API →</a>
+    <pre class="code" id="rm-result" style="margin-top:10px;display:none;"></pre>
+    <div class="vrt-cwe">CWE-330 · impact: account takeover for any known username</div>
+  </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='js/vrt-lab.js') }}"></script>
+<script>
+async function testJwtNone(){
+  const b64=o=>btoa(JSON.stringify(o)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  const forged = `${b64({alg:'none',typ:'JWT'})}.${b64({username:'attacker',role:'admin'})}.`;
+  await vrtTest('/api/crew-v3', {headers:{'Authorization':'Bearer '+forged}}, 'jwt-result');
+}
+async function testCors(){
+  await vrtTest('/api/vrt/crew-data', {headers:{'Origin':'https://evil.example'}}, 'cors-result');
+}
+async function testRememberMe(){
+  await vrtTest('/vrt/remember-me', {method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'username=commander'}, 'rm-result');
+}
+</script>
+{% endblock %}

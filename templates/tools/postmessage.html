@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}PostMessage Origin Confusion{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p2">P2</span>
+    <h2>PostMessage Origin Confusion</h2>
+    <div><span class="mono-dim">CWE-346 · No origin validation · Attacker iframe reads sensitive posted data</span></div>
+  </div>
+  <div class="vuln-info">
+    This parent frame posts crew session data to a child iframe via <code>window.postMessage()</code>.
+    The child does not check <code>event.origin</code> — any frame (including the attacker's) can receive the data.
+    The <b>Attacker Frame</b> tab shows the captured secrets.
+  </div>
+  <div class="hint-box">
+    <b>Fix:</b> Always validate <code>event.origin === "https://trusted.example.com"</code> in the
+    <code>message</code> event handler. Never use <code>targetOrigin: "*"</code> with sensitive data.
+  </div>
+</div>
+<div class="two-col">
+  <div class="panel">
+    <h2>Vulnerable Child (no origin check)</h2>
+    <iframe src="{{ url_for('postmessage_child') }}" id="child-frame"
+            style="width:100%;height:240px;border:1px solid var(--hairline);border-radius:var(--r);background:#010109"></iframe>
+    <button onclick="sendToChild()" class="btn" style="margin-top:10px">Post Secret Data to Child</button>
+  </div>
+  <div class="panel">
+    <h2>Attacker Frame (captures data)</h2>
+    <iframe src="{{ url_for('postmessage_attacker') }}" id="attacker-frame"
+            style="width:100%;height:240px;border:1px solid rgba(255,51,102,.3);border-radius:var(--r);background:#010109"></iframe>
+    <button onclick="sendToAttacker()" class="btn btn-danger" style="margin-top:10px">Send to Attacker Frame</button>
+  </div>
+</div>
+{% block extra_scripts %}
+<script>
+var SECRET = {
+  session_token: "{{ session.get('_id', 'sess-abc123') }}",
+  csrf_token:    "csrf-" + Math.random().toString(36).slice(2),
+  username:      "{{ session.get('username', 'k.mbeki') }}",
+  role:          "{{ session.get('role', 'crew') }}"
+};
+function sendToChild() {
+  var f = document.getElementById('child-frame');
+  // VULN: targetOrigin = '*' — any frame receives this
+  f.contentWindow.postMessage(SECRET, '*');
+}
+function sendToAttacker() {
+  var f = document.getElementById('attacker-frame');
+  f.contentWindow.postMessage(SECRET, '*');
+}
+</script>
+{% endblock %}
+{% endblock %}

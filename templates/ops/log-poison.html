@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Log Poisoning → LFI → RCE{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p1">P1</span>
+    <h2>Log Poisoning → LFI → SSTI Chain</h2>
+    <p class="mono-dim">CWE-116 + CWE-22 · Inject into access log → render via Jinja2 → RCE</p>
+  </div>
+  <div class="vuln-info">
+    <b>Step 1 (Poison):</b> A Jinja2 template payload in the User-Agent is written verbatim into the access log.<br>
+    <b>Step 2 (Trigger):</b> The log file is read and passed to <code>render_template_string()</code>,
+    executing the injected template — chaining log poisoning + LFI + SSTI into full RCE.
+  </div>
+
+  <h3>Current Log (last 5 lines)</h3>
+  <pre class="log-block">{{ log_preview | e }}</pre>
+
+  {% if poisoned_output %}
+  <h3>Triggered Output</h3>
+  <pre class="result-block">{{ poisoned_output | tojson(indent=2) }}</pre>
+  {% endif %}
+
+  <div class="two-col">
+    <div>
+      <h3>Step 1 — Inject Payload into Log</h3>
+      <p class="mono-dim">User-Agent written verbatim to access log</p>
+      <form method="POST" class="lab-form">
+        <input type="hidden" name="action" value="poison">
+        <label>User-Agent payload</label>
+        <input name="user_agent" value="{{ '{' }}{{ '{' }}lipsum.__globals__.os.popen('id').read(){{ '}' }}{{ '}' }}" class="input-field input-wide">
+        <button type="submit" class="btn btn-danger">Inject into Log</button>
+      </form>
+    </div>
+    <div>
+      <h3>Step 2 — Trigger (Render Log via Jinja2)</h3>
+      <p class="mono-dim">Simulates LFI reading /var/log/access.log → SSTI fires</p>
+      <form method="POST" class="lab-form">
+        <input type="hidden" name="action" value="trigger">
+        <button type="submit" class="btn btn-danger">Render Log → SSTI → RCE</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

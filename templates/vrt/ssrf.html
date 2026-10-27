@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Relay Diagnostics{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vrt-lab.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-radar.svg') }}" width="40" height="40" alt="">
+  <div>
+    <h1>Relay Diagnostics <span class="sev p1" style="margin-left:8px;">P1 · SSRF</span></h1>
+    <p>Ping any relay endpoint from the station's ground-side network. The server fetches whatever URL you provide.</p>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="panel">
+    <h2>Diagnostics Console</h2>
+    <form method="post">
+      <label class="mono-dim" style="display:block;margin-bottom:6px;font-size:12px;">Target URL</label>
+      <input type="text" name="url" placeholder="http://127.0.0.1:5000/internal/core-control" style="width:100%;padding:8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);margin-bottom:12px;">
+      <button type="submit" class="btn small">Send Ping</button>
+    </form>
+    {% if result %}
+    <pre class="code" style="margin-top:14px;">{{ result | tojson(indent=2) }}</pre>
+    {% endif %}
+  </div>
+  <div class="panel">
+    <h2>Why this works</h2>
+    <p class="mono-dim">The diagnostics tool has no allow-list on destination host and no block on loopback/private ranges. Try pointing it at <code>http://127.0.0.1:5000/internal/core-control</code> — a panel that was never meant to be network-reachable from outside the station's internal bus.</p>
+    <div class="vrt-cwe">CWE-918 · Server-Side Request Forgery</div>
+  </div>
+</div>
+{% endblock %}

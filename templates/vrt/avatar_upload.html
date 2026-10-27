@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Avatar Upload{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vrt-lab.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-avatar.svg') }}" width="40" height="40" alt="">
+  <div>
+    <h1>Crew Avatar Upload <span class="sev p2" style="margin-left:8px;">P2 · Stored XSS</span></h1>
+    <p>Upload a station-badge avatar as SVG. It is rendered inline on the page for every crew member who views your profile.</p>
+  </div>
+</div>
+
+<div class="grid grid-2">
+  <div class="panel">
+    <h2>Upload Avatar (.svg only)</h2>
+    <form method="post" enctype="multipart/form-data">
+      <input type="file" name="avatar" accept=".svg" style="margin-bottom:12px;">
+      <br>
+      <button type="submit" class="btn small">Upload</button>
+    </form>
+    <p class="vrt-cwe" style="margin-top:14px;">Try an SVG containing <code>&lt;script&gt;alert(document.cookie)&lt;/script&gt;</code> or an <code>onload=</code> handler on the root <code>&lt;svg&gt;</code> tag.</p>
+  </div>
+  <div class="panel">
+    <h2>Rendered Avatar</h2>
+    {% if svg_content %}
+      <div style="background:var(--panel-2);padding:14px;border:1px solid var(--hairline);border-radius:var(--radius);">
+        {{ svg_content | safe }}
+      </div>
+      <p class="mono-dim" style="margin-top:10px;">Uploaded as <code>{{ uploaded }}</code> and rendered with <code>|safe</code> — no sanitization of embedded scripts or event handlers.</p>
+    {% else %}
+      <p class="mono-dim">No avatar uploaded yet.</p>
+    {% endif %}
+    <div class="vrt-cwe">CWE-79 · Stored Cross-Site Scripting via unsanitized SVG</div>
+  </div>
+</div>
+{% endblock %}

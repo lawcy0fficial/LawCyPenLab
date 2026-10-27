@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Satellite Contact Search{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p2">P2</span>
+    <h2>Satellite Contact Search — XPath Injection</h2>
+    <p class="mono-dim">CWE-643 · Raw input in XPath predicate · Dumps ROOT-clearance secrets</p>
+  </div>
+  <div class="vuln-info">
+    XPath predicate: <code>./contact[callsign='<b>INPUT</b>']</code> — input is never escaped.
+  </div>
+
+  <div class="hint-box">
+    <b>Payloads:</b>
+    <code>RELAY-ALPHA</code> (normal) ·
+    <code>' or '1'='1</code> (wildcard dump) ·
+    <code>RELAY-ALPHA' or 'x'='x</code> (targeted bypass)
+  </div>
+
+  {% if error %}<div class="flash error">Error: {{ error }}</div>{% endif %}
+  {% if xpath_used %}<p class="mono-dim">XPath used: <code>{{ xpath_used }}</code></p>{% endif %}
+
+  {% if results %}
+  <table class="data-table">
+    <tr><th>Callsign</th><th>Clearance</th><th>API Secret</th><th>Notes</th></tr>
+    {% for r in results %}
+    <tr>
+      <td>{{ r.callsign }}</td>
+      <td><span class="badge {{ 'p1' if r.clearance == 'ROOT' else 'p2' if r.clearance == 'BLUE' else 'p3' }}">{{ r.clearance }}</span></td>
+      <td><code>{{ r.api_secret }}</code></td>
+      <td>{{ r.notes }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+
+  <form method="POST" class="lab-form">
+    <label>Callsign</label>
+    <input name="callsign" value="{{ callsign | default('') }}" placeholder="e.g. RELAY-ALPHA" class="input-field">
+    <button type="submit" class="btn">Search</button>
+  </form>
+</div>
+{% endblock %}

