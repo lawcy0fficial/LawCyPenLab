@@ -1,0 +1,75 @@
+/* LawCypenLab v22 add-on
+   Reactor Control · Emergency Broadcast · Biometrics · Data Export · Redirector */
+
+/* ── Reactor Control ─────────────────────────────────────────────────── */
+.reactor-panel{background:linear-gradient(160deg,#0d1118,#110a0a);border:1px solid rgba(255,92,92,.4);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;}
+.reactor-panel::before{content:"";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(255,92,92,.06) 0%,transparent 70%);pointer-events:none;}
+.reactor-core{display:flex;flex-direction:column;align-items:center;gap:14px;padding:20px 0;}
+.reactor-ring{border-radius:50%;border-style:solid;border-color:rgba(255,92,92,.4);display:flex;align-items:center;justify-content:center;animation:reactor-spin 8s linear infinite;}
+.reactor-ring.r1{width:160px;height:160px;border-width:2px;}
+.reactor-ring.r2{width:120px;height:120px;border-width:1.5px;animation-direction:reverse;animation-duration:5s;}
+.reactor-ring.r3{width:80px;height:80px;border-width:1px;animation-duration:3s;}
+@keyframes reactor-spin{to{transform:rotate(360deg);}}
+.reactor-temp{font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;color:#FF5C5C;text-shadow:0 0 24px rgba(255,92,92,.6);}
+.reactor-label{font-size:9px;letter-spacing:.2em;color:rgba(255,92,92,.6);font-family:'JetBrains Mono',monospace;}
+.rod{width:12px;border-radius:3px;background:linear-gradient(to bottom,#232B3D,#4FD8E0);transition:height .4s ease;box-shadow:0 0 6px rgba(79,216,224,.4);}
+.rod-wrap{display:flex;gap:6px;align-items:flex-end;height:80px;margin-top:10px;}
+.control-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+.ctrl-btn{padding:8px 14px;border:1px solid rgba(255,92,92,.4);background:rgba(255,92,92,.06);color:#FF5C5C;border-radius:var(--radius);cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;transition:all .18s;}
+.ctrl-btn:hover{background:rgba(255,92,92,.15);border-color:#FF5C5C;}
+.ctrl-btn.safe{border-color:rgba(79,216,224,.4);background:rgba(79,216,224,.06);color:var(--cyan);}
+.ctrl-btn.safe:hover{background:rgba(79,216,224,.15);}
+
+/* ── Emergency Broadcast ─────────────────────────────────────────────── */
+.broadcast-banner{background:rgba(255,92,92,0.08);border:2px solid #FF5C5C;border-radius:var(--radius);padding:16px 20px;position:relative;overflow:hidden;}
+.broadcast-banner::before{content:"EMERGENCY BROADCAST";position:absolute;top:8px;right:14px;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.2em;color:rgba(255,92,92,.4);}
+.broadcast-ticker{font-family:'JetBrains Mono',monospace;font-size:13px;color:#FF5C5C;white-space:nowrap;overflow:hidden;}
+.broadcast-ticker span{display:inline-block;animation:ticker 18s linear infinite;}
+@keyframes ticker{from{transform:translateX(100%);}to{transform:translateX(-100vw);}}
+.broadcast-card{border:1px solid var(--hairline);border-radius:var(--radius);padding:14px;background:var(--panel);margin-bottom:8px;transition:all .18s;}
+.broadcast-card:hover{border-color:rgba(255,92,92,.3);}
+.broadcast-card.emergency{border-color:rgba(255,92,92,.4);background:rgba(255,92,92,.04);}
+.bcast-level{font-size:9px;font-family:'JetBrains Mono',monospace;letter-spacing:.12em;padding:2px 7px;border-radius:20px;margin-bottom:6px;display:inline-block;}
+.bcast-level.emergency{background:rgba(255,92,92,.15);color:#FF5C5C;border:1px solid rgba(255,92,92,.4);}
+.bcast-level.advisory{background:rgba(245,166,35,.12);color:#F5A623;border:1px solid rgba(245,166,35,.3);}
+.bcast-level.info{background:rgba(79,216,224,.1);color:#4FD8E0;border:1px solid rgba(79,216,224,.25);}
+
+/* ── Biometrics ───────────────────────────────────────────────────────── */
+.bio-pad{background:var(--panel);border:1px solid var(--hairline);border-radius:var(--radius);padding:22px;text-align:center;max-width:320px;margin:0 auto;}
+.bio-scan{width:100px;height:100px;border-radius:50%;border:2px solid var(--cyan);margin:0 auto 16px;position:relative;overflow:hidden;background:rgba(79,216,224,.04);}
+.bio-scan::after{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(to right,transparent,var(--cyan),transparent);animation:bio-scan 2s ease-in-out infinite;}
+@keyframes bio-scan{0%{top:0;}50%{top:97px;}100%{top:0;}}
+.bio-result{padding:10px 14px;border-radius:var(--radius);margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:12px;display:none;}
+.bio-result.found{background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.3);color:#F5A623;}
+.bio-result.notfound{background:rgba(255,92,92,.08);border:1px solid rgba(255,92,92,.3);color:#FF5C5C;}
+.brute-table{width:100%;border-collapse:collapse;font-size:11px;font-family:'JetBrains Mono',monospace;}
+.brute-table td{padding:5px 8px;border-bottom:1px solid rgba(35,43,61,.5);}
+.brute-table tr.hit td{color:var(--cyan);}
+.brute-table tr.miss td{color:var(--dim);}
+
+/* ── Data Export ─────────────────────────────────────────────────────── */
+.export-format{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.fmt-btn{padding:8px 16px;border:1px solid var(--hairline);border-radius:var(--radius);background:var(--panel);color:var(--dim);cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:11px;transition:all .18s;}
+.fmt-btn.active,.fmt-btn:hover{border-color:var(--cyan-dim);color:var(--text);background:var(--panel-2);}
+.export-progress{height:3px;background:var(--hairline);border-radius:2px;margin-top:10px;overflow:hidden;}
+.export-progress-fill{height:3px;background:var(--cyan);border-radius:2px;width:0;transition:width .8s var(--ease);}
+.redos-timer{font-family:'JetBrains Mono',monospace;font-size:36px;font-weight:700;color:var(--danger);text-align:center;padding:14px 0;}
+.redos-bar{height:6px;border-radius:3px;background:var(--hairline);margin-top:8px;}
+.redos-fill{height:6px;border-radius:3px;background:var(--danger);transition:width .3s linear;}
+
+/* ── Open Redirect ───────────────────────────────────────────────────── */
+.redirect-chain{display:flex;flex-direction:column;gap:4px;padding:14px;background:var(--panel-2);border:1px solid var(--hairline);border-radius:var(--radius);font-family:'JetBrains Mono',monospace;font-size:11px;}
+.redirect-hop{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:var(--radius);}
+.redirect-hop.safe{background:rgba(79,216,224,.05);}
+.redirect-hop.vuln{background:rgba(255,92,92,.08);border:1px solid rgba(255,92,92,.2);}
+.redirect-hop .hop-url{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.redirect-hop .hop-status{flex:none;padding:2px 7px;border-radius:2px;font-size:10px;}
+.hop-302{background:rgba(245,166,35,.15);color:#F5A623;}
+.hop-200{background:rgba(79,216,224,.12);color:#4FD8E0;}
+.hop-evil{background:rgba(255,92,92,.15);color:#FF5C5C;}
+
+/* ── JWT Confusion ───────────────────────────────────────────────────── */
+.jwt-segment{padding:6px 10px;border-radius:3px;font-family:'JetBrains Mono',monospace;font-size:11px;word-break:break-all;margin-bottom:4px;}
+.jwt-segment.header{background:rgba(255,92,92,.1);border-left:3px solid #FF5C5C;}
+.jwt-segment.payload{background:rgba(245,166,35,.1);border-left:3px solid #F5A623;}
+.jwt-segment.sig{background:rgba(79,216,224,.08);border-left:3px solid #4FD8E0;}

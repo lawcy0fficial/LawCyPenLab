@@ -1,0 +1,25 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vulnerability shield">
+  <defs>
+    <linearGradient id="sbGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4FD8E0"/>
+      <stop offset="100%" stop-color="#2C8A91"/>
+    </linearGradient>
+  </defs>
+  <path d="M60 6 L106 24 V56 C106 86 86 104 60 114 C34 104 14 86 14 56 V24 Z"
+        fill="rgba(79,216,224,0.05)" stroke="url(#sbGrad)" stroke-width="2.5"/>
+  <path d="M60 16 L96 30 V56 C96 80 80 95 60 103 C40 95 24 80 24 56 V30 Z"
+        fill="none" stroke="#232B3D" stroke-width="1"/>
+  <!-- bug body -->
+  <ellipse cx="60" cy="66" rx="16" ry="20" fill="rgba(255,92,92,0.12)" stroke="#FF5C5C" stroke-width="2.5"/>
+  <line x1="60" y1="46" x2="60" y2="86" stroke="#FF5C5C" stroke-width="1.5"/>
+  <line x1="44" y1="52" x2="52" y2="58" stroke="#FF5C5C" stroke-width="2" stroke-linecap="round"/>
+  <line x1="76" y1="52" x2="68" y2="58" stroke="#FF5C5C" stroke-width="2" stroke-linecap="round"/>
+  <line x1="42" y1="66" x2="52" y2="66" stroke="#FF5C5C" stroke-width="2" stroke-linecap="round"/>
+  <line x1="78" y1="66" x2="68" y2="66" stroke="#FF5C5C" stroke-width="2" stroke-linecap="round"/>
+  <line x1="44" y1="80" x2="52" y2="74" stroke="#FF5C5C" stroke-width="2" stroke-linecap="round"/>
+  <line x1="76" y1="80" x2="68" y2="74" stroke="#FF5C5C" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="53" cy="44" r="2.4" fill="#FF5C5C"/>
+  <circle cx="67" cy="44" r="2.4" fill="#FF5C5C"/>
+  <line x1="53" y1="44" x2="48" y2="36" stroke="#FF5C5C" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="67" y1="44" x2="72" y2="36" stroke="#FF5C5C" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

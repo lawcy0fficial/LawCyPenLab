@@ -1,0 +1,21 @@
+# LawCypenLab :: AEGIS STATION
+# FOR AUTHORIZED SECURITY TRAINING USE ONLY.
+#
+# Run:   docker compose up --build
+# Then:  http://127.0.0.1:5000
+#
+# The port is bound to 127.0.0.1 only, on purpose — this keeps the
+# (deliberately vulnerable) app off your LAN/public interfaces by
+# default. If you need to reach it from another lab VM, change
+# "127.0.0.1:5000:5000" to "5000:5000" deliberately and make sure
+# the host is otherwise isolated from any network you don't control.
+
+services:
+  lawcypenlab:
+    build: .
+    ports:
+      - "127.0.0.1:5000:5000"
+    volumes:
+      - ./instance:/app/instance
+      - ./uploads:/app/uploads
+      - ./plugins_store:/app/plugins_store

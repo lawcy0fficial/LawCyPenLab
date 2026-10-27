@@ -1,0 +1,11 @@
+<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Crew messaging">
+  <rect x="4" y="8" width="34" height="24" rx="5" fill="rgba(79,216,224,0.06)" stroke="#4FD8E0" stroke-width="2"/>
+  <path d="M4 32 L4 38 L12 32 Z" fill="#4FD8E0" opacity="0.6"/>
+  <line x1="10" y1="17" x2="32" y2="17" stroke="#4FD8E0" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="10" y1="22" x2="26" y2="22" stroke="#4FD8E0" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+  <rect x="30" y="28" width="14" height="12" rx="4" fill="rgba(255,92,92,0.1)" stroke="#FF5C5C" stroke-width="1.5"/>
+  <line x1="33" y1="33" x2="41" y2="33" stroke="#FF5C5C" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="33" y1="36" x2="39" y2="36" stroke="#FF5C5C" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
+  <circle cx="42" cy="10" r="5" fill="#FF5C5C" stroke="#0B0E14" stroke-width="1.5"/>
+  <text x="42" y="13.5" text-anchor="middle" font-size="6" fill="#0B0E14" font-weight="900" font-family="monospace">!</text>
+</svg>

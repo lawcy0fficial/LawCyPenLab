@@ -1,0 +1,99 @@
+/* LawCypenLab v20 add-on
+   Messaging · Personnel · Telemetry Dash · Supply Chain · Scheduler · Debug Terminal */
+
+/* ── Messaging ───────────────────────────────────────────────────────── */
+.msg-thread{display:flex;flex-direction:column;gap:10px;padding:16px;max-height:420px;overflow-y:auto;}
+.msg-bubble{max-width:72%;padding:10px 14px;border-radius:14px;font-size:13px;line-height:1.5;position:relative;}
+.msg-bubble.inbound{align-self:flex-start;background:var(--panel-2);border:1px solid var(--hairline);border-bottom-left-radius:4px;}
+.msg-bubble.outbound{align-self:flex-end;background:rgba(79,216,224,0.1);border:1px solid rgba(79,216,224,0.3);border-bottom-right-radius:4px;}
+.msg-meta{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-bottom:4px;}
+.msg-compose{display:flex;gap:8px;padding:12px;border-top:1px solid var(--hairline);}
+.msg-compose input{flex:1;padding:9px 12px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:20px;font-size:13px;}
+.msg-compose input:focus{outline:none;border-color:var(--cyan-dim);}
+
+/* ── Telemetry Dashboard ─────────────────────────────────────────────── */
+.telem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+@media(max-width:800px){.telem-grid{grid-template-columns:repeat(2,1fr);}}
+.gauge-card{background:var(--panel);border:1px solid var(--hairline);border-radius:var(--radius);padding:16px;text-align:center;position:relative;overflow:hidden;}
+.gauge-card::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 120%,rgba(79,216,224,0.07),transparent 70%);pointer-events:none;}
+.gauge-val{font-family:'JetBrains Mono',monospace;font-size:28px;font-weight:700;margin:6px 0 2px;display:block;}
+.gauge-val.ok{color:var(--cyan);}
+.gauge-val.warn{color:var(--amber);}
+.gauge-val.crit{color:var(--danger);animation:pulse-red 1s infinite;}
+.gauge-label{font-size:10px;color:var(--dim);letter-spacing:.1em;}
+.gauge-bar{width:100%;height:3px;background:var(--hairline);border-radius:2px;margin-top:10px;}
+.gauge-fill{height:3px;border-radius:2px;transition:width .6s var(--ease);}
+.gauge-fill.ok{background:var(--cyan);}
+.gauge-fill.warn{background:var(--amber);}
+.gauge-fill.crit{background:var(--danger);}
+.telem-log{font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.8;color:var(--dim);max-height:180px;overflow-y:auto;}
+.telem-log .ts{color:var(--cyan-dim);}
+.telem-log .lvl-warn{color:var(--amber);}
+.telem-log .lvl-crit{color:var(--danger);}
+.telem-log .injected{background:rgba(255,92,92,0.12);color:var(--danger);}
+
+/* ── Personnel ───────────────────────────────────────────────────────── */
+.personnel-card{display:flex;align-items:center;gap:14px;padding:12px 16px;border:1px solid var(--hairline);border-radius:var(--radius);background:var(--panel);margin-bottom:8px;transition:all .18s var(--ease);}
+.personnel-card:hover{border-color:var(--cyan-dim);background:var(--panel-2);}
+.personnel-avatar{width:44px;height:44px;border-radius:50%;background:rgba(79,216,224,0.08);border:2px solid var(--hairline);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--cyan);flex:none;}
+.personnel-name{font-weight:600;font-size:14px;}
+.personnel-role{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:2px;}
+.personnel-actions{margin-left:auto;display:flex;gap:8px;}
+
+/* ── Supply Chain ────────────────────────────────────────────────────── */
+.vendor-card{border:1px solid var(--hairline);border-radius:var(--radius);background:var(--panel);padding:14px;margin-bottom:10px;position:relative;}
+.vendor-card.compromised{border-color:rgba(255,92,92,.35);}
+.vendor-card.compromised::after{content:"COMPROMISED";position:absolute;top:10px;right:10px;font-size:9px;font-family:'JetBrains Mono',monospace;letter-spacing:.1em;color:var(--danger);border:1px solid var(--danger);padding:2px 6px;border-radius:2px;}
+.vendor-name{font-weight:700;font-size:14px;margin-bottom:4px;}
+.vendor-pkg{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);}
+.dep-tree{font-family:'JetBrains Mono',monospace;font-size:12px;line-height:2;padding:10px;background:var(--panel-2);border:1px solid var(--hairline);border-radius:var(--radius);}
+.dep-tree .dep-vuln{color:var(--danger);}
+
+/* ── Scheduler ───────────────────────────────────────────────────────── */
+.sched-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:16px;}
+.sched-day{padding:8px 6px;border:1px solid var(--hairline);border-radius:var(--radius);background:var(--panel);min-height:72px;font-size:11px;}
+.sched-day-num{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;margin-bottom:4px;color:var(--dim);}
+.sched-day.today .sched-day-num{color:var(--cyan);}
+.sched-task{padding:2px 5px;border-radius:2px;font-size:10px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sched-task.critical{background:rgba(255,92,92,0.15);color:var(--danger);border-left:2px solid var(--danger);}
+.sched-task.normal{background:rgba(79,216,224,0.1);color:var(--cyan);border-left:2px solid var(--cyan-dim);}
+.sched-task.overdue{background:rgba(245,166,35,0.1);color:var(--amber);border-left:2px solid var(--amber);}
+.task-row{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--hairline);border-radius:var(--radius);background:var(--panel);margin-bottom:6px;}
+.task-row:hover{border-color:var(--cyan-dim);}
+.task-priority{width:6px;height:6px;border-radius:50%;flex:none;}
+.task-priority.high{background:var(--danger);box-shadow:0 0 6px var(--danger);}
+.task-priority.med{background:var(--amber);}
+.task-priority.low{background:var(--cyan);}
+
+/* ── Debug Terminal ──────────────────────────────────────────────────── */
+.term-shell{background:#060A0F;border:1px solid #FF5C5C;border-radius:6px;overflow:hidden;font-family:'JetBrains Mono',monospace;}
+.term-titlebar{background:rgba(255,92,92,0.12);padding:8px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(255,92,92,0.3);}
+.term-dot{width:12px;height:12px;border-radius:50%;}
+.term-output{padding:14px;font-size:12px;line-height:1.8;min-height:220px;max-height:320px;overflow-y:auto;color:#a8ff78;}
+.term-output .prompt{color:#4FD8E0;}
+.term-output .error{color:#FF5C5C;}
+.term-output .warning{color:#F5A623;}
+.term-output .dim{color:#555;}
+.term-input-row{display:flex;align-items:center;gap:0;padding:8px 14px;border-top:1px solid rgba(255,92,92,0.2);}
+.term-prompt-sym{color:#4FD8E0;margin-right:8px;font-family:'JetBrains Mono',monospace;font-size:12px;white-space:nowrap;}
+.term-input{flex:1;background:transparent;border:none;color:#a8ff78;font-family:'JetBrains Mono',monospace;font-size:12px;outline:none;}
+.term-cursor{display:inline-block;width:8px;height:14px;background:#4FD8E0;vertical-align:middle;animation:blink .9s step-end infinite;margin-left:2px;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+
+/* ── Timing Attack Visualizer ────────────────────────────────────────── */
+.timing-bar-wrap{background:var(--panel-2);border:1px solid var(--hairline);border-radius:var(--radius);padding:12px;margin-top:10px;}
+.timing-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;font-size:12px;}
+.timing-label{width:120px;color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:11px;flex:none;}
+.timing-track{flex:1;height:14px;background:var(--panel);border-radius:2px;overflow:hidden;}
+.timing-fill{height:100%;border-radius:2px;transition:width .6s var(--ease);}
+.timing-fill.exists{background:rgba(255,92,92,0.7);}
+.timing-fill.missing{background:rgba(79,216,224,0.4);}
+.timing-ms{width:52px;font-family:'JetBrains Mono',monospace;font-size:11px;text-align:right;}
+
+/* ── GraphQL Playground ──────────────────────────────────────────────── */
+.gql-editor{width:100%;height:140px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);padding:10px;font-family:'JetBrains Mono',monospace;font-size:12px;resize:vertical;}
+.gql-schema-type{border:1px solid var(--hairline);border-radius:var(--radius);padding:10px 14px;margin-bottom:6px;background:var(--panel);}
+.gql-type-name{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--cyan);font-weight:700;}
+.gql-field{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);margin-left:12px;line-height:1.9;}
+.gql-field .field-name{color:var(--text);}
+.gql-field .field-type{color:var(--amber);}

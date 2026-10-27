@@ -1,0 +1,9 @@
+<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="API portal">
+  <rect x="4" y="8" width="40" height="32" rx="4" fill="rgba(79,216,224,0.05)" stroke="#4FD8E0" stroke-width="2"/>
+  <rect x="4" y="8" width="40" height="8" rx="4" fill="rgba(79,216,224,0.1)" stroke="#4FD8E0" stroke-width="2"/>
+  <circle cx="11" cy="12" r="1.5" fill="#FF5C5C"/>
+  <circle cx="17" cy="12" r="1.5" fill="#F5A623"/>
+  <circle cx="23" cy="12" r="1.5" fill="#4FD8E0"/>
+  <text x="8" y="27" font-family="JetBrains Mono,monospace" font-size="7" fill="#4FD8E0" font-weight="700">&gt; POST /api</text>
+  <text x="8" y="35" font-family="JetBrains Mono,monospace" font-size="6" fill="#7C8699">200 OK { ... }</text>
+</svg>

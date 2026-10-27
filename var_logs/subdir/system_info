@@ -1,0 +1,13 @@
+AEGIS Station :: System Information
+====================================
+OS: Custom RTOS 4.1.2
+Kernel: aegis-kernel 5.15.0-station
+Architecture: x86_64
+Uptime: 91 days, 4 hours, 33 minutes
+
+Services: flask (pid 1), nginx (pid 2), postgres (pid 3)
+Secrets file: /etc/aegis/secrets.conf
+JWT_SECRET=aegis-jwt-secret
+ADMIN_TOKEN=OMEGA-7734
+
+-- This file is readable via path traversal on CVE endpoints --

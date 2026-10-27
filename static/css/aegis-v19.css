@@ -1,0 +1,125 @@
+/* LawCypenLab v19 add-on stylesheet
+   Station Map · Alert Console · API Portal · 2FA · Credits · Mission Log */
+
+/* ── Station Map ─────────────────────────────────────────────────────── */
+.map-wrap{position:relative;overflow:hidden;border:1px solid var(--hairline);border-radius:var(--radius);}
+.map-wrap svg{width:100%;height:auto;display:block;}
+.map-module{transition:filter .2s ease;}
+.map-module:hover{filter:brightness(1.35);}
+.map-legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;}
+.map-legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim);}
+.map-legend-dot{width:8px;height:8px;border-radius:50%;}
+.map-module-panel{background:var(--panel);border:1px solid var(--hairline);border-radius:var(--radius);padding:14px;min-height:80px;}
+.map-module-panel h3{margin:0 0 4px;font-size:13px;}
+.map-status{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.06em;}
+.map-status::before{content:"";width:7px;height:7px;border-radius:50%;display:inline-block;}
+.map-status.nominal{color:#4FD8E0;}.map-status.nominal::before{background:#4FD8E0;box-shadow:0 0 6px #4FD8E0;}
+.map-status.warning{color:#F5A623;}.map-status.warning::before{background:#F5A623;animation:pulse-amber 1.4s infinite;}
+.map-status.critical{color:#FF5C5C;}.map-status.critical::before{background:#FF5C5C;animation:pulse-red 1s infinite;}
+@keyframes pulse-amber{0%,100%{box-shadow:0 0 4px #F5A623;}50%{box-shadow:0 0 12px #F5A623;}}
+@keyframes pulse-red{0%,100%{box-shadow:0 0 4px #FF5C5C;}50%{box-shadow:0 0 14px #FF5C5C;}}
+
+/* ── Alert Console ──────────────────────────────────────────────────── */
+.alert-row{
+  display:flex;align-items:center;gap:14px;padding:11px 14px;
+  border:1px solid var(--hairline);border-radius:var(--radius);margin-bottom:8px;
+  background:var(--panel);transition:all .18s var(--ease);
+}
+.alert-row:hover{border-color:var(--cyan-dim);background:var(--panel-2);}
+.alert-row.dismissed{opacity:.35;text-decoration:line-through;}
+.alert-sev{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.06em;width:68px;flex:none;}
+.alert-sev.crit{color:var(--danger);}
+.alert-sev.high{color:var(--amber);}
+.alert-sev.med{color:var(--cyan);}
+.alert-msg{flex:1;font-size:13px;}
+.alert-ts{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace;flex:none;}
+.alert-dismiss{flex:none;font-size:11px;padding:4px 10px;border:1px solid var(--hairline);border-radius:var(--radius);background:transparent;color:var(--dim);cursor:pointer;transition:all .18s;}
+.alert-dismiss:hover{border-color:var(--danger);color:var(--danger);}
+.alert-console-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.alert-badge{display:inline-block;width:20px;height:20px;border-radius:50%;background:var(--danger);color:var(--void);font-size:11px;font-weight:900;text-align:center;line-height:20px;font-family:'JetBrains Mono',monospace;animation:pulse-red 1s infinite;}
+
+/* ── API Portal ─────────────────────────────────────────────────────── */
+.api-ep{
+  border:1px solid var(--hairline);border-radius:var(--radius);margin-bottom:10px;
+  background:var(--panel);overflow:hidden;
+}
+.api-ep-head{
+  display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;
+  transition:background .15s;
+}
+.api-ep-head:hover{background:var(--panel-2);}
+.method{
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;
+  padding:3px 8px;border-radius:20px;letter-spacing:.06em;flex:none;
+}
+.method.get{background:rgba(79,216,224,0.12);color:#4FD8E0;border:1px solid rgba(79,216,224,.3);}
+.method.post{background:rgba(245,166,35,0.12);color:#F5A623;border:1px solid rgba(245,166,35,.3);}
+.method.delete{background:rgba(255,92,92,0.12);color:#FF5C5C;border:1px solid rgba(255,92,92,.3);}
+.method.patch{background:rgba(140,82,255,0.12);color:#8c52ff;border:1px solid rgba(140,82,255,.3);}
+.api-ep-path{font-family:'JetBrains Mono',monospace;font-size:13px;flex:1;}
+.api-ep-body{padding:14px;border-top:1px solid var(--hairline);display:none;}
+.api-ep-body.open{display:block;}
+.api-ep-body textarea{width:100%;height:80px;background:var(--panel-2);border:1px solid var(--hairline);color:var(--text);border-radius:var(--radius);padding:8px;font-family:'JetBrains Mono',monospace;font-size:12px;resize:vertical;}
+
+/* ── Credits / CSRF ─────────────────────────────────────────────────── */
+.wallet-card{
+  background:linear-gradient(135deg, #121826, #0d1520);
+  border:1px solid var(--cyan-dim);border-radius:6px;padding:20px 24px;
+  position:relative;overflow:hidden;
+}
+.wallet-card::before{
+  content:"AEGIS CREDIT SYSTEM";position:absolute;top:10px;right:14px;
+  font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.2em;
+  color:rgba(79,216,224,0.2);
+}
+.wallet-balance{font-family:'JetBrains Mono',monospace;font-size:38px;font-weight:700;color:var(--cyan);margin:8px 0 4px;}
+.wallet-label{font-size:10px;color:var(--dim);letter-spacing:.1em;font-family:'JetBrains Mono',monospace;}
+.wallet-acct{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--dim);margin-top:12px;border-top:1px solid var(--hairline);padding-top:8px;}
+.csrf-note{background:rgba(255,92,92,0.08);border:1px solid rgba(255,92,92,.3);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--danger);margin-top:14px;}
+
+/* ── 2FA Pad ─────────────────────────────────────────────────────────── */
+.otp-pad{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;max-width:220px;}
+.otp-btn{
+  height:50px;border:1px solid var(--hairline);border-radius:var(--radius);
+  background:var(--panel-2);color:var(--text);font-family:'JetBrains Mono',monospace;
+  font-size:18px;cursor:pointer;transition:all .15s var(--ease);
+}
+.otp-btn:hover{border-color:var(--cyan);background:rgba(79,216,224,0.06);}
+.otp-display{
+  font-family:'JetBrains Mono',monospace;font-size:28px;letter-spacing:.3em;
+  padding:10px 14px;background:var(--void);border:1px solid var(--hairline);
+  border-radius:var(--radius);margin-bottom:14px;text-align:center;
+  min-height:54px;color:var(--cyan);
+}
+
+/* ── Mission Log ─────────────────────────────────────────────────────── */
+.log-file-card{
+  display:flex;align-items:center;gap:12px;padding:12px 14px;
+  border:1px solid var(--hairline);border-radius:var(--radius);
+  background:var(--panel);margin-bottom:8px;text-decoration:none;color:var(--text);
+  transition:all .18s var(--ease);
+}
+.log-file-card:hover{border-color:var(--cyan-dim);background:var(--panel-2);}
+.log-file-card .log-name{font-family:'JetBrains Mono',monospace;font-size:13px;flex:1;}
+.log-file-card .log-class{font-size:10px;padding:3px 8px;border-radius:20px;font-family:'JetBrains Mono',monospace;letter-spacing:.06em;}
+.log-class.crew{background:rgba(79,216,224,.1);color:var(--cyan);border:1px solid rgba(79,216,224,.3);}
+.log-class.officer{background:rgba(245,166,35,.1);color:var(--amber);border:1px solid rgba(245,166,35,.3);}
+.lfi-demo{background:rgba(255,92,92,0.06);border:1px solid rgba(255,92,92,.25);border-radius:var(--radius);padding:12px 14px;margin-top:14px;}
+
+/* ── Inventory ───────────────────────────────────────────────────────── */
+.inv-table{width:100%;border-collapse:collapse;font-size:13px;}
+.inv-table th{background:var(--panel-2);padding:8px 12px;text-align:left;border-bottom:1px solid var(--hairline);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;color:var(--dim);}
+.inv-table td{padding:10px 12px;border-bottom:1px solid rgba(35,43,61,0.5);}
+.inv-table tr:hover td{background:var(--panel-2);}
+.stock-bar{display:flex;align-items:center;gap:8px;}
+.stock-fill{height:4px;border-radius:2px;background:var(--cyan);}
+.stock-fill.low{background:var(--danger);}
+
+/* ── Shared helpers ──────────────────────────────────────────────────── */
+.mono-dim{color:var(--dim);font-family:'JetBrains Mono',monospace;font-size:12px;}
+.vuln-callout{
+  display:flex;gap:10px;padding:10px 14px;margin-top:10px;
+  background:rgba(255,92,92,0.05);border:1px solid rgba(255,92,92,.25);border-radius:var(--radius);
+}
+.vuln-callout .sev{flex:none;align-self:flex-start;margin-top:1px;}
+.vuln-callout p{margin:0;font-size:12px;color:var(--dim);}

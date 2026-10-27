@@ -1,0 +1,16 @@
+<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Maintenance scheduler">
+  <rect x="4" y="10" width="40" height="34" rx="4" fill="rgba(79,216,224,0.05)" stroke="#4FD8E0" stroke-width="2"/>
+  <rect x="4" y="10" width="40" height="10" rx="4" fill="rgba(79,216,224,0.12)" stroke="#4FD8E0" stroke-width="2"/>
+  <line x1="14" y1="6" x2="14" y2="14" stroke="#4FD8E0" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="34" y1="6" x2="34" y2="14" stroke="#4FD8E0" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- grid -->
+  <g fill="#4FD8E0" opacity="0.5">
+    <rect x="9" y="26" width="6" height="4" rx="1"/>
+    <rect x="19" y="26" width="6" height="4" rx="1"/>
+    <rect x="29" y="26" width="6" height="4" rx="1"/>
+    <rect x="9" y="35" width="6" height="4" rx="1"/>
+    <rect x="19" y="35" width="6" height="4" rx="1"/>
+  </g>
+  <rect x="29" y="35" width="6" height="4" rx="1" fill="rgba(255,92,92,0.3)" stroke="#FF5C5C" stroke-width="1.5"/>
+  <text x="24" y="17" text-anchor="middle" font-size="5.5" fill="#4FD8E0" font-family="JetBrains Mono,monospace" letter-spacing=".5">MARCH 2024</text>
+</svg>

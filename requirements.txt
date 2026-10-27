@@ -1,0 +1,10 @@
+# LawCypenLab :: AEGIS Station — Python dependencies
+# Install: pip install -r requirements.txt
+
+Flask>=3.0.0
+Werkzeug>=3.0.0
+PyJWT>=2.7.0
+requests>=2.31.0
+lxml>=5.0.0
+PyYAML>=6.0.1
+cryptography>=41.0.0

@@ -1,0 +1,60 @@
+/* LawCypenLab :: VRT Bug Bounty Lab add-on stylesheet
+   Bugcrowd-VRT-style severity badges, vuln cards, hero banner. */
+
+.vrt-hero{
+  display:flex;align-items:center;gap:22px;
+  padding:22px 24px;margin-bottom:24px;
+  background:linear-gradient(135deg, rgba(79,216,224,0.06), rgba(255,92,92,0.04));
+  border:1px solid var(--hairline);border-radius:var(--radius);
+  position:relative;overflow:hidden;
+}
+.vrt-hero::after{
+  content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(115deg, rgba(255,255,255,0.02) 0 2px, transparent 2px 26px);
+  pointer-events:none;
+}
+.vrt-hero img{width:64px;height:64px;flex:none;filter:drop-shadow(0 0 14px rgba(255,92,92,.35));}
+.vrt-hero h1{margin:0 0 4px;font-size:20px;}
+.vrt-hero p{margin:0;color:var(--dim);font-size:13px;max-width:620px;}
+
+.vrt-stats{display:flex;gap:10px;margin-left:auto;flex:none;}
+.vrt-stat{
+  text-align:center;padding:8px 14px;border:1px solid var(--hairline);border-radius:var(--radius);
+  background:var(--panel);min-width:64px;
+}
+.vrt-stat b{display:block;font-size:18px;font-family:'JetBrains Mono',monospace;}
+.vrt-stat span{font-size:10px;color:var(--dim);letter-spacing:.08em;}
+.vrt-stat.p1 b{color:var(--danger);}
+.vrt-stat.p2 b{color:var(--amber);}
+.vrt-stat.p3 b{color:var(--cyan);}
+
+.vrt-filters{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+.vrt-filter{
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.06em;
+  padding:6px 12px;border:1px solid var(--hairline);border-radius:var(--radius);
+  background:transparent;color:var(--dim);cursor:pointer;transition:all .18s var(--ease);
+}
+.vrt-filter:hover{color:var(--text);border-color:var(--cyan-dim);}
+.vrt-filter.active{color:var(--void);background:var(--cyan);border-color:var(--cyan);}
+
+.vrt-card{position:relative;}
+.vrt-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;}
+.sev{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.08em;
+  padding:3px 9px;border-radius:20px;border:1px solid;flex:none;white-space:nowrap;
+}
+.sev::before{content:"";width:6px;height:6px;border-radius:50%;display:inline-block;}
+.sev.p1{color:var(--danger);border-color:var(--danger);background:rgba(255,92,92,0.08);}
+.sev.p1::before{background:var(--danger);box-shadow:0 0 6px var(--danger);}
+.sev.p2{color:var(--amber);border-color:var(--amber);background:rgba(245,166,35,0.08);}
+.sev.p2::before{background:var(--amber);box-shadow:0 0 6px var(--amber);}
+.sev.p3{color:var(--cyan);border-color:var(--cyan-dim);background:rgba(79,216,224,0.08);}
+.sev.p3::before{background:var(--cyan);box-shadow:0 0 6px var(--cyan);}
+
+.vrt-cat{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px;}
+.vrt-card[data-sev="p1"]{border-color:rgba(255,92,92,.25);}
+.vrt-card[data-sev="p2"]{border-color:rgba(245,166,35,.2);}
+.vrt-card.hidden{display:none;}
+
+.vrt-cwe{font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;margin-top:10px;opacity:.8;}
