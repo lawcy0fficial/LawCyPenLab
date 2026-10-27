@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Personnel Directory{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Personnel Directory Lookup</h1><p>Search the enterprise directory service by crew ID.</p></div>
+<div class="panel">
+  <form method="POST">
+    <label>Crew ID (cn)</label>
+    <input type="text" name="cn" placeholder="e.g. r.solis" value="{{ cn_query }}">
+    <button class="btn" type="submit">Search Directory</button>
+  </form>
+  <p class="mono-dim" style="margin-top:8px;">Only exact crew ID matches are returned — clearance ROOT entries are excluded from results.</p>
+</div>
+{% if error %}<div class="flash err">{{ error }}</div>{% endif %}
+{% if results %}
+<div class="panel">
+  <h2>Directory <span>Results</span></h2>
+  <table class="data-table">
+    <tr><th>CN</th><th>Clearance</th><th>Dept</th><th>Notes</th></tr>
+    {% for r in results %}
+    <tr>
+      <td>{{ r.cn }}</td>
+      <td><span class="badge {{ 'danger' if r.clearance=='ROOT' else 'ok' }}">{{ r.clearance }}</span></td>
+      <td>{{ r.dept }}</td>
+      <td>{{ r.notes }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+{% endblock %}

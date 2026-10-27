@@ -1,0 +1,37 @@
+{% extends 'admin/base.html' %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Crew Accounts</h1><p>Manage roles and access for all registered users.</p></div>
+<div class="panel">
+  <table class="data-table">
+    <tr><th>ID</th><th>Username</th><th>Email</th><th>Role</th><th>API Token</th><th></th></tr>
+    {% for u in users %}
+    <tr>
+      <td>{{ u['id'] }}</td>
+      <td>{{ u['username'] }}</td>
+      <td>{{ u['email'] }}</td>
+      <td>
+        <form method="POST" style="display:flex;gap:6px;">
+          <input type="hidden" name="id" value="{{ u['id'] }}">
+          <select name="role" style="margin:0;">
+            <option value="crew" {{ 'selected' if u['role']=='crew' }}>crew</option>
+            <option value="officer" {{ 'selected' if u['role']=='officer' }}>officer</option>
+            <option value="admin" {{ 'selected' if u['role']=='admin' }}>admin</option>
+          </select>
+          <button class="btn small" type="submit">Set</button>
+        </form>
+      </td>
+      <td class="mono-dim">{{ u['api_token'] }}</td>
+      <td>
+        <form method="POST" action="{{ url_for('admin_impersonate', uid=u['id']) }}" style="display:inline;">
+          <button class="btn secondary small" type="submit">Log In As</button>
+        </form>
+        <form method="POST" action="{{ url_for('admin_user_delete', uid=u['id']) }}" style="display:inline;">
+          <button class="btn danger small" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

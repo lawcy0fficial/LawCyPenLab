@@ -1,0 +1,14 @@
+{% extends 'admin/base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Admin Dashboard</h1><p>Console for station bulletins, plugins, and crew accounts.</p></div>
+<div class="grid grid-3">
+  <div class="panel"><div class="stat"><div class="v">{{ stats.posts }}</div><div class="l">Bulletins</div></div></div>
+  <div class="panel"><div class="stat"><div class="v">{{ stats.comments }}</div><div class="l">Pending Comments</div></div></div>
+  <div class="panel"><div class="stat"><div class="v">{{ stats.users }}</div><div class="l">Crew Accounts</div></div></div>
+</div>
+<div class="panel">
+  <h2>Installed <span>Plugins</span>: {{ stats.plugins }}</h2>
+  <a href="{{ url_for('admin_plugins') }}" class="btn secondary small">Manage Plugins →</a>
+</div>
+{% endblock %}

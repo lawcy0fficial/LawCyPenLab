@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — AEGIS Station{% endblock %}
+{% block content %}
+<style>
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px;}
+.stat-card{
+  background:linear-gradient(135deg,rgba(15,15,40,.95),rgba(10,10,28,.98));
+  border:1px solid var(--hairline);border-radius:var(--rl);
+  padding:18px 20px;position:relative;overflow:hidden;
+  animation:panel-enter .4s var(--ease) both;cursor:default;
+  transition:border-color .2s,box-shadow .2s;
+}
+.stat-card:hover{border-color:var(--cyan-dim);box-shadow:0 4px 24px rgba(0,0,0,.4),0 0 20px rgba(0,212,255,.06);}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--accent-color,var(--cyan));opacity:.5;}
+.stat-card::after{content:'';position:absolute;bottom:0;right:0;
+  font-size:3rem;opacity:.06;color:var(--accent-color,var(--cyan));}
+.stat-label{font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:8px;font-family:'JetBrains Mono',monospace;}
+.stat-value{font-family:'Orbitron','JetBrains Mono',monospace;
+  font-size:1.9rem;font-weight:700;color:var(--text-bright,#fff);
+  line-height:1;text-shadow:0 0 20px var(--accent-color,rgba(0,212,255,.5));}
+.stat-sub{font-size:.62rem;color:var(--dim);margin-top:6px;font-family:'JetBrains Mono',monospace;}
+
+.launch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px;}
+.launch-card{
+  background:linear-gradient(135deg,rgba(12,12,32,.95),rgba(8,8,22,.98));
+  border:1px solid var(--hairline);border-radius:var(--r);
+  padding:14px 16px;text-decoration:none;
+  display:flex;flex-direction:column;gap:6px;
+  transition:all .2s var(--ease);position:relative;overflow:hidden;
+}
+.launch-card:hover{
+  border-color:var(--lc-color,var(--cyan));
+  box-shadow:0 4px 20px rgba(0,0,0,.4),0 0 16px rgba(0,0,0,.2);
+  transform:translateY(-2px);text-decoration:none;
+  background:linear-gradient(135deg,rgba(20,20,50,.97),rgba(14,14,38,.99));
+}
+.launch-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:var(--lc-color,var(--cyan));opacity:0;transition:opacity .2s;}
+.launch-card:hover::before{opacity:.7;}
+.lc-badge{align-self:flex-start;}
+.lc-title{font-size:.78rem;color:var(--text);font-family:'JetBrains Mono',monospace;
+  font-weight:600;letter-spacing:.03em;}
+.lc-desc{font-size:.67rem;color:var(--dim);line-height:1.5;}
+
+.telemetry-bar{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:10px;padding:14px 18px;
+  background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.1);
+  border-radius:var(--r);margin-bottom:20px;font-family:'JetBrains Mono',monospace;
+}
+.tel-item{font-size:.68rem;color:var(--dim);}
+.tel-item b{color:var(--cyan);font-size:.8rem;}
+.tel-bar-wrap{height:4px;background:var(--hairline);border-radius:2px;margin-top:4px;overflow:hidden;}
+.tel-bar{height:100%;border-radius:2px;animation:bar-fill .8s var(--ease) both;}
+@keyframes bar-fill{from{width:0;}to{width:var(--bar-w,50%);}}
+</style>
+
+<div class="telemetry-bar">
+  <div class="tel-item">O₂ LEVEL <b>98.4%</b><div class="tel-bar-wrap"><div class="tel-bar" style="--bar-w:98.4%;background:var(--success)"></div></div></div>
+  <div class="tel-item">HULL PSI <b>14.6</b><div class="tel-bar-wrap"><div class="tel-bar" style="--bar-w:87%;background:var(--cyan)"></div></div></div>
+  <div class="tel-item">CORE TEMP <b>9182°C</b><div class="tel-bar-wrap"><div class="tel-bar" style="--bar-w:72%;background:var(--amber)"></div></div></div>
+  <div class="tel-item">SHIELD <b>91%</b><div class="tel-bar-wrap"><div class="tel-bar" style="--bar-w:91%;background:var(--purple)"></div></div></div>
+  <div class="tel-item">ORBIT ALT <b>412 KM</b><div class="tel-bar-wrap"><div class="tel-bar" style="--bar-w:60%;background:var(--cyan)"></div></div></div>
+  <div class="tel-item">CREW ONLINE <b>{{ crew_count }}</b><div class="tel-bar-wrap"><div class="tel-bar" style="--bar-w:80%;background:var(--success)"></div></div></div>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card" style="--accent-color:var(--danger)">
+    <div class="stat-label">P1 — Critical</div>
+    <div class="stat-value" style="color:var(--danger)">{{ p1_count }}</div>
+    <div class="stat-sub">RCE · JWT Bypass · XXE · SSRF</div>
+  </div>
+  <div class="stat-card" style="--accent-color:var(--amber)">
+    <div class="stat-label">P2 — High</div>
+    <div class="stat-value" style="color:var(--amber)">{{ p2_count }}</div>
+    <div class="stat-sub">IDOR · SQLi · XSS · CSRF</div>
+  </div>
+  <div class="stat-card" style="--accent-color:var(--cyan)">
+    <div class="stat-label">P3 — Medium</div>
+    <div class="stat-value">{{ p3_count }}</div>
+    <div class="stat-sub">Info · Headers · Logic</div>
+  </div>
+  <div class="stat-card" style="--accent-color:var(--purple)">
+    <div class="stat-label">Total Routes</div>
+    <div class="stat-value" style="color:var(--purple)">325</div>
+    <div class="stat-sub">Waves 1–26 + CVE Batches 1–8</div>
+  </div>
+  <div class="stat-card" style="--accent-color:var(--success)">
+    <div class="stat-label">CVE Analogs</div>
+    <div class="stat-value" style="color:var(--success)">60+</div>
+    <div class="stat-sub">Log4j · Spring · Telerik · MOVEit</div>
+  </div>
+  <div class="stat-card" style="--accent-color:var(--pink,#ff6eb4)">
+    <div class="stat-label">Templates</div>
+    <div class="stat-value" style="color:#ff6eb4">144</div>
+    <div class="stat-sub">All connected · Verified</div>
+  </div>
+</div>
+
+<h3>Quick Launch — Top Targets</h3>
+<div class="launch-grid">
+  {% set launches = [
+    ('/debug-terminal/exec',  'p1','OS Command Injection','debug-terminal','Direct shell execution via eval()',danger),
+    ('/messaging',            'p1','SSTI → RCE','messaging','Jinja2 template injection',danger),
+    ('/mission-log/view',     'p1','Path Traversal / LFI','mission-log','Read arbitrary files via ../../../',danger),
+    ('/inventory',            'p1','Pickle Deserialization RCE','inventory','Malicious pickle payload upload',danger),
+    ('/api/v8/crew',          'p1','JWT jku Injection','jku','Server fetches key from attacker URL',danger),
+    ('/login',                'p2','SQL Injection Auth Bypass','login','Classic OR 1=1 bypass',amber),
+    ('/api/crew/1',           'p2','IDOR / BOLA','idor','Access any user record by ID',amber),
+    ('/credits/transfer',     'p2','CSRF Token Transfer','credits','No SameSite, no CSRF token',amber),
+    ('/satellite/contacts',   'p2','XPath Injection','satcontacts',"' or '1'='1 dumps ROOT secrets",amber),
+    ('/station/directory',    'p2','LDAP Injection','ldapinject','Wildcard * dumps all users',amber),
+    ('/ai/assistant',         'p2','Prompt Injection','aiassist','Leak system prompt secrets',amber),
+    ('/auth/saml/acs',        'p1','SAML Signature Wrapping','samlxsw','XSW attack → admin access',danger),
+  ] %}
+  {% for route, sev, title, active_key, desc, _ in launches %}
+  <a href="{{ route }}" class="launch-card" style="--lc-color:var(--{{ 'danger' if sev=='p1' else 'amber' }})">
+    <span class="badge {{ sev }} lc-badge">{{ sev|upper }}</span>
+    <div class="lc-title">{{ title }}</div>
+    <div class="lc-desc">{{ desc }}</div>
+  </a>
+  {% endfor %}
+</div>
+
+<div class="two-col">
+  <div class="panel">
+    <h2>Recent Activity</h2>
+    {% if recent_tickets %}
+    <table class="data-table">
+      <tr><th>ID</th><th>Title</th><th>Status</th></tr>
+      {% for t in recent_tickets %}
+      <tr><td>#{{ t.id }}</td><td>{{ t.subject[:40] }}</td>
+          <td><span class="badge {{ 'p3' if t.status=='open' else 'off' }}">{{ t.status }}</span></td></tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="mono-dim">No tickets yet — visit <a href="{{ url_for('support') }}">/support</a> to create one.</p>
+    {% endif %}
+  </div>
+  <div class="panel">
+    <h2>Crew Manifest</h2>
+    {% if crew %}
+    <table class="data-table">
+      <tr><th>Username</th><th>Role</th><th>Email</th></tr>
+      {% for c in crew %}
+      <tr><td><code>{{ c.username }}</code></td>
+          <td><span class="badge {{ 'p1' if c.role=='admin' else 'p2' if c.role=='officer' else 'p3' }}">{{ c.role }}</span></td>
+          <td>{{ c.email }}</td></tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="mono-dim">No crew data.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

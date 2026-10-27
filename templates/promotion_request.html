@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Promotion Requests{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Promotion Requests</h1><p>Request a role change and track pending reviews.</p></div>
+<div class="panel">
+  <form method="POST">
+    <label>Requested Role</label>
+    <select name="target_role">
+      <option value="officer">Officer</option>
+      <option value="admin">Station Admin</option>
+    </select>
+    <button class="btn" type="submit">Submit Request</button>
+  </form>
+</div>
+<div class="panel">
+  <h2>Your <span>Requests</span></h2>
+  <table class="data-table">
+    <tr><th>#</th><th>Requested Role</th><th>Status</th><th></th></tr>
+    {% for t in mine %}
+    <tr>
+      <td>{{ t['id'] }}</td>
+      <td>{{ t['subject'].split(':')[1] }}</td>
+      <td><span class="badge {{ 'ok' if t['status']=='closed' else 'warn' }}">{{ t['status'] }}</span></td>
+      <td></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="mono-dim">No requests yet.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+<div class="panel">
+  <h2>Open <span>Requests — Reviewer Queue</span></h2>
+  <table class="data-table">
+    <tr><th>#</th><th>Crew</th><th>Requested Role</th><th></th></tr>
+    {% for t in all_open %}
+    <tr>
+      <td>{{ t['id'] }}</td>
+      <td>{{ t['username'] }}</td>
+      <td>{{ t['subject'].split(':')[1] }}</td>
+      <td>
+        <form method="POST" action="{{ url_for('promotion_approve', tid=t['id']) }}">
+          <button class="btn small" type="submit">Approve</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" class="mono-dim">No open requests.</td></tr>
+    {% endfor %}
+  </table>
+  <p class="mono-dim" style="margin-top:8px;">Nothing stops you from approving your own request here.</p>
+</div>
+{% endblock %}

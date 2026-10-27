@@ -1,0 +1,15 @@
+{% extends 'admin/base.html' %}
+{% block title %}Crew Bios Digest{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Crew Bios Digest</h1><p>A quick-skim view of every crew member's bio in one place.</p></div>
+<div class="panel">
+  {% for p in profiles %}
+  <div style="padding:10px 0;border-bottom:1px solid var(--hairline);">
+    <b>{{ p['username'] }}</b>
+    <div>{{ p['bio']|safe }}</div>
+  </div>
+  {% else %}
+  <p class="mono-dim">No bios set yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Crew Directory{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Crew Directory</h1><p>All personnel currently assigned to AEGIS Station.</p></div>
+<div id="welcome-banner" style="margin-bottom:14px;"></div>
+<script>
+  // --- VULN: DOM-based XSS — the "welcome" query param is read on the
+  // client and written straight into innerHTML with no sanitization or
+  // encoding at all. This never touches the server, so server-side output
+  // encoding elsewhere in the app does nothing to stop it — e.g.:
+  //   /crew?welcome=<img src=x onerror=alert(document.cookie)>
+  (function () {
+    var params = new URLSearchParams(window.location.search);
+    var welcome = params.get('welcome');
+    if (welcome) {
+      document.getElementById('welcome-banner').innerHTML =
+        '<div class="flash info">Welcome back, ' + decodeURIComponent(welcome) + '!</div>';
+    }
+  })();
+</script>
+<div class="panel">
+  <table class="data-table">
+    <tr><th>ID</th><th>Name</th><th>Rank</th><th>Role</th><th></th></tr>
+    {% for c in crew %}
+    <tr>
+      <td>{{ c['id'] }}</td>
+      <td>{{ c['display_name'] or c['username'] }}</td>
+      <td>{{ c['rank'] or '—' }}</td>
+      <td><span class="badge {{ 'warn' if c['role']=='admin' else 'ok' }}">{{ c['role'] }}</span></td>
+      <td><a href="{{ url_for('crew_profile', uid=c['id']) }}" class="btn secondary small">View Profile</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

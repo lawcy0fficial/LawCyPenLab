@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Crew Directory (Sortable){% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Crew Directory — Sortable</h1><p>Sort the roster by any column.</p></div>
+<div class="panel">
+  <form method="GET" class="field-row">
+    <div><label>Sort by</label>
+      <select name="sort" onchange="this.form.submit()">
+        <option value="username" {{ 'selected' if sort=='username' }}>Username</option>
+        <option value="role" {{ 'selected' if sort=='role' }}>Role</option>
+        <option value="id" {{ 'selected' if sort=='id' }}>ID</option>
+      </select>
+    </div>
+  </form>
+  <p class="mono-dim" style="margin-top:8px;">Current sort expression: <code>{{ sort }}</code> — try editing the <code>?sort=</code> query parameter directly.</p>
+</div>
+{% if error %}
+<div class="panel"><div class="flash err">Query error: {{ error }}</div></div>
+{% endif %}
+<div class="panel">
+  <table class="data-table">
+    <tr><th>ID</th><th>Username</th><th>Role</th><th>Display Name</th></tr>
+    {% for c in crew %}
+    <tr><td>{{ c['id'] }}</td><td>{{ c['username'] }}</td><td>{{ c['role'] }}</td><td>{{ c['display_name'] or '—' }}</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

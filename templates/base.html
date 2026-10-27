@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>{% block title %}AEGIS Station{% endblock %} :: LawCypenLab</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>🛸</text></svg>">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vrt-lab.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v19.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v20.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v22.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/aegis-v23.css') }}">
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- Starfield canvas -->
+<canvas id="starfield"></canvas>
+
+<!-- Page progress bar -->
+<div id="page-progress"></div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<div class="shell">
+
+  <!-- ── Sidebar ──────────────────────────────────────────────────── -->
+  <div id="sidebar-backdrop"></div>
+  <aside class="sidebar" id="sidebar-nav">
+
+    <div class="brand">
+      <div class="mark">LAWCYPENLAB // ORBITAL OPS</div>
+      <div class="name">AEGIS <span>STATION</span></div>
+      <div class="brand-status">ALL SYSTEMS NOMINAL</div>
+    </div>
+
+    <nav class="navlist">
+
+      <div class="navlabel">Overview</div>
+      <a href="{{ url_for('dashboard') }}"        class="{{ 'active' if active=='dashboard' }}">◆ Dashboard</a>
+      <a href="{{ url_for('crew_directory') }}"   class="{{ 'active' if active=='crew' }}">◆ Crew Directory</a>
+      <a href="{{ url_for('search') }}"           class="{{ 'active' if active=='search' }}">◆ Global Search</a>
+
+      <div class="navlabel">Systems</div>
+      <a href="{{ url_for('life_support') }}"     class="{{ 'active' if active=='life_support' }}">◆ Life Support</a>
+      <a href="{{ url_for('airlock') }}"          class="{{ 'active' if active=='airlock' }}">◆ Airlock Control</a>
+      <a href="{{ url_for('cargo') }}"            class="{{ 'active' if active=='cargo' }}">◆ Cargo Manifest</a>
+      <a href="{{ url_for('docking') }}"          class="{{ 'active' if active=='docking' }}">◆ Docking Requests</a>
+      <a href="{{ url_for('docking_webhook') }}"  class="{{ 'active' if active=='webhook' }}">◆ Docking Webhook</a>
+      <a href="{{ url_for('star_charts') }}"      class="{{ 'active' if active=='star_charts' }}">◆ Star Charts</a>
+      <a href="{{ url_for('logs') }}"             class="{{ 'active' if active=='logs' }}">◆ Station Logs</a>
+      <a href="{{ url_for('telemetry_import') }}" class="{{ 'active' if active=='telemetry' }}">◆ Telemetry Import</a>
+      <a href="{{ url_for('backup') }}"           class="{{ 'active' if active=='backup' }}">◆ Backup / Restore</a>
+
+      <div class="navlabel">Crew</div>
+      <a href="{{ url_for('comms') }}"            class="{{ 'active' if active=='comms' }}">◆ Comms</a>
+      <a href="{{ url_for('support') }}"          class="{{ 'active' if active=='support' }}">◆ Support Tickets</a>
+      <a href="{{ url_for('upload') }}"           class="{{ 'active' if active=='upload' }}">◆ File Upload</a>
+      <a href="{{ url_for('profile_settings') }}" class="{{ 'active' if active=='settings' }}">◆ Profile Settings</a>
+      <a href="{{ url_for('feedback') }}"         class="{{ 'active' if active=='feedback' }}">◆ Feedback</a>
+      <a href="{{ url_for('report_generate') }}"  class="{{ 'active' if active=='reports' }}">◆ Report Generator</a>
+      <a href="{{ url_for('callsign_validate') }}" class="{{ 'active' if active=='callsign' }}">◆ Callsign Validator</a>
+
+      <div class="navlabel">Network</div>
+      <a href="{{ url_for('cms_dashboard') }}"    class="{{ 'active' if active=='cms' }}">◆ Ops Board (CMS)</a>
+
+      <div class="navlabel">Satellite / ICS / IoT</div>
+      <a href="{{ url_for('uplink') }}"           class="{{ 'active' if active=='uplink' }}">◆ Satellite Uplink</a>
+      <a href="{{ url_for('tle_upload') }}"        class="{{ 'active' if active=='tle' }}">◆ TLE Upload</a>
+      <a href="{{ url_for('scada') }}"            class="{{ 'active' if active=='scada' }}">◆ Reactor SCADA</a>
+      <a href="{{ url_for('iot_devices') }}"      class="{{ 'active' if active=='iot' }}">◆ IoT Fleet</a>
+      <a href="{{ url_for('gps_sync') }}"         class="{{ 'active' if active=='gpssync' }}">◆ GPS Beacon Sync</a>
+      <a href="{{ url_for('relay_check_cert') }}" class="{{ 'active' if active=='relaycert' }}">◆ Relay Cert Check</a>
+      <a href="{{ url_for('debug_bundle') }}"     class="{{ 'active' if active=='debugbundle' }}">◆ Diagnostic Bundle</a>
+
+      <div class="navlabel">Extended Threat Surface</div>
+      <a href="{{ url_for('directory_lookup') }}" class="{{ 'active' if active=='directory' }}">◆ Personnel Directory</a>
+      <a href="{{ url_for('clickjack_demo') }}"   class="{{ 'active' if active=='clickjack' }}">◆ Clickjacking Demo</a>
+      <a href="{{ url_for('hpp_demo') }}"         class="{{ 'active' if active=='hpp' }}">◆ Parameter Pollution</a>
+      <a href="{{ url_for('promotion_request') }}" class="{{ 'active' if active=='promotions' }}">◆ Promotion Requests</a>
+
+      <div class="navlabel">CVE Lab</div>
+      <a href="{{ url_for('cve_lab_index') }}"    class="{{ 'active' if active=='cvelab' }}">◆ CVE Analog Hub</a>
+      <a href="{{ url_for('log_console') }}"      class="{{ 'active' if active=='logconsole' }}">◆ Log4Shell Analog</a>
+      <a href="{{ url_for('settings_binder') }}"  class="{{ 'active' if active=='springshell' }}">◆ Spring4Shell Analog</a>
+      <a href="{{ url_for('env_check') }}"        class="{{ 'active' if active=='shellshock' }}">◆ Shellshock Analog</a>
+      <a href="{{ url_for('station_self_destruct') }}" class="{{ 'active' if active=='selfdestruct' }}">◆ Self-Destruct</a>
+      <a href="{{ url_for('crew_sorted') }}"      class="{{ 'active' if active=='crewsorted' }}">◆ Crew Dir (Sortable)</a>
+      <a href="{{ url_for('preferences_page') }}" class="{{ 'active' if active=='preferences' }}">◆ Preferences</a>
+      <a href="{{ url_for('federation_connect') }}" class="{{ 'active' if active=='federation' }}">◆ Mission Control Fed.</a>
+
+      <div class="navlabel">Station Command</div>
+      <a href="{{ url_for('commander_succession') }}" class="{{ 'active' if active=='commander' }}">◆ Succession Protocol</a>
+
+      <div class="navlabel">VRT Bug Bounty Lab</div>
+      <a href="{{ url_for('vrt_lab_index') }}"    class="{{ 'active' if active=='vrtlab' }}">◆ VRT Lab Hub</a>
+      <a href="{{ url_for('vrt_ssrf') }}"         class="{{ 'active' if active=='vrtlab' }}">◆ Relay Diagnostics (SSRF)</a>
+      <a href="{{ url_for('vrt_avatar_upload') }}" class="{{ 'active' if active=='vrtlab' }}">◆ Avatar Upload (XSS)</a>
+      <a href="{{ url_for('vrt_store_checkout') }}" class="{{ 'active' if active=='vrtlab' }}">◆ Requisition Store</a>
+      <a href="{{ url_for('vrt_reset_request') }}" class="{{ 'active' if active=='vrtlab' }}">◆ Reset Link Request</a>
+
+      <div class="navlabel">Operations</div>
+      <a href="{{ url_for('mission_log_index') }}" class="{{ 'active' if active=='missionlog' }}">◆ Mission Log (LFI)</a>
+      <a href="{{ url_for('inventory_index') }}"  class="{{ 'active' if active=='inventory' }}">◆ Inventory (Pickle RCE)</a>
+      <a href="{{ url_for('alerts_index') }}"     class="{{ 'active' if active=='alerts' }}">◆ Alert Console (XSS)</a>
+      <a href="{{ url_for('station_map') }}"      class="{{ 'active' if active=='stationmap' }}">◆ Station Map</a>
+
+      <div class="navlabel">API &amp; Auth</div>
+      <a href="{{ url_for('api_portal') }}"       class="{{ 'active' if active=='apiportal' }}">◆ API Portal</a>
+      <a href="{{ url_for('graphql_v5') }}"       class="{{ 'active' if active=='graphqlv5' }}">◆ GraphQL v5</a>
+      <a href="{{ url_for('credits_index') }}"    class="{{ 'active' if active=='credits' }}">◆ Credits (CSRF)</a>
+      <a href="{{ url_for('auth_2fa') }}"         class="{{ 'active' if active=='auth2fa' }}">◆ 2FA Bypass</a>
+      <a href="{{ url_for('profile_change_email') }}" class="{{ 'active' if active=='changeemail' }}">◆ Email Change (ATO)</a>
+      <a href="{{ url_for('api_keys_list') }}"    class="{{ 'active' if active=='apikeys' }}">◆ API Key Manager</a>
+
+      <div class="navlabel">Crew &amp; Comms</div>
+      <a href="{{ url_for('messaging_index') }}"  class="{{ 'active' if active=='messaging' }}">◆ Messaging (SSTI/XSS)</a>
+      <a href="{{ url_for('personnel_index') }}"  class="{{ 'active' if active=='personnel' }}">◆ Personnel (Mass Assign)</a>
+      <a href="{{ url_for('notifications_index') }}" class="{{ 'active' if active=='notifications' }}">◆ Notifications (IDOR)</a>
+      <a href="{{ url_for('crew_notes_index') }}" class="{{ 'active' if active=='crewnotes' }}">◆ Crew Notes (IDOR)</a>
+      <a href="{{ url_for('audit_log_view') }}"   class="{{ 'active' if active=='auditlog' }}">◆ Audit Log (BFLA)</a>
+
+      <div class="navlabel">Station Systems</div>
+      <a href="{{ url_for('telemetry_dashboard') }}" class="{{ 'active' if active=='telemdashboard' }}">◆ Telemetry</a>
+      <a href="{{ url_for('supply_chain_index') }}" class="{{ 'active' if active=='supplychain' }}">◆ Supply Chain</a>
+      <a href="{{ url_for('scheduler_index') }}"  class="{{ 'active' if active=='scheduler' }}">◆ Scheduler (SQLi/Race)</a>
+      <a href="{{ url_for('debug_terminal') }}"   class="{{ 'active' if active=='debugterm' }}">◆ Debug Terminal (RCE)</a>
+      <a href="{{ url_for('reactor_control') }}"  class="{{ 'active' if active=='reactor' }}">◆ Reactor (XXE/YAML)</a>
+      <a href="{{ url_for('broadcast_index') }}"  class="{{ 'active' if active=='broadcast' }}">◆ Broadcast (Unauth/XSS)</a>
+
+      <div class="navlabel">Auth &amp; Export</div>
+      <a href="{{ url_for('biometrics_index') }}" class="{{ 'active' if active=='biometrics' }}">◆ Biometrics</a>
+      <a href="{{ url_for('data_export_index') }}" class="{{ 'active' if active=='dataexport' }}">◆ Data Export (CSV)</a>
+      <a href="{{ url_for('redirector_index') }}" class="{{ 'active' if active=='redirector' }}">◆ Redirect Lab</a>
+
+      <div class="navlabel">Advanced Classes</div>
+      <a href="{{ url_for('smuggler_index') }}"   class="{{ 'active' if active=='smuggler' }}">◆ HTTP Smuggling</a>
+      <a href="{{ url_for('ws_terminal_index') }}" class="{{ 'active' if active=='wsterminal' }}">◆ WebSocket (CSWSH)</a>
+      <a href="{{ url_for('path_confusion_index') }}" class="{{ 'active' if active=='pathconfusion' }}">◆ Path Confusion</a>
+      <a href="{{ url_for('cache_poisoning_index') }}" class="{{ 'active' if active=='cachepoisoning' }}">◆ Cache Poisoning</a>
+      <a href="{{ url_for('graphql_dos_index') }}" class="{{ 'active' if active=='graphqldos' }}">◆ GraphQL DoS + BOPLA</a>
+
+      <div class="navlabel">Wave 24 — Auth / Injection</div>
+      <a href="{{ url_for('api_v8_crew') }}"          class="{{ 'active' if active=='jku' }}">◆ JWT jku Injection</a>
+      <a href="{{ url_for('cloud_ssrf_demo') }}"       class="{{ 'active' if active=='cloudssrf' }}">◆ Cloud SSRF / IMDS</a>
+      <a href="{{ url_for('sync_state_marshal') }}"    class="{{ 'active' if active=='marshal' }}">◆ marshal RCE</a>
+      <a href="{{ url_for('xml_dos') }}"               class="{{ 'active' if active=='xmldos' }}">◆ Billion Laughs DoS</a>
+      <a href="{{ url_for('api_v2_null_origin') }}"    class="{{ 'active' if active=='nullcors' }}">◆ CORS null Origin</a>
+      <a href="{{ url_for('graphql_alias_batch') }}"   class="{{ 'active' if active=='aliasbatch' }}">◆ GQL Alias Batching</a>
+      <a href="{{ url_for('kiosk_login_v2') }}"        class="{{ 'active' if active=='kioskv2' }}">◆ Lockout Case Bypass</a>
+      <a href="{{ url_for('reset_link_referer_leak') }}?token=DEMO" class="{{ 'active' if active=='refleak' }}">◆ Referer Token Leak</a>
+      <a href="{{ url_for('satellite_contacts') }}"    class="{{ 'active' if active=='satcontacts' }}">◆ XPath Injection</a>
+      <a href="{{ url_for('headers_audit') }}"         class="{{ 'active' if active=='headersaudit' }}">◆ Security Headers Audit</a>
+      <a href="{{ url_for('subdomain_takeover') }}"    class="{{ 'active' if active=='subdomain' }}">◆ Subdomain Takeover</a>
+
+      <div class="navlabel">Wave 25 — SSRF / Deser / Logic</div>
+      <a href="{{ url_for('station_file_read') }}"     class="{{ 'active' if active=='fileread' }}">◆ file:// SSRF (urllib)</a>
+      <a href="{{ url_for('gopher_relay') }}"          class="{{ 'active' if active=='gopherssrf' }}">◆ Gopher SSRF → Redis</a>
+      <a href="{{ url_for('api_v9_crew') }}"           class="{{ 'active' if active=='x5u' }}">◆ JWT x5u Injection</a>
+      <a href="{{ url_for('station_directory') }}"     class="{{ 'active' if active=='ldapinject' }}">◆ LDAP Injection</a>
+      <a href="{{ url_for('exposed_git_repo') }}"      class="{{ 'active' if active=='gitdump' }}">◆ .git Directory Dump</a>
+      <a href="{{ url_for('log_poison') }}"            class="{{ 'active' if active=='logpoison' }}">◆ Log Poison → LFI → RCE</a>
+      <a href="{{ url_for('account_reset_v2') }}"      class="{{ 'active' if active=='resetv2' }}">◆ Insecure Randomness</a>
+      <a href="{{ url_for('graphql_hidden_mutations') }}" class="{{ 'active' if active=='gqlhidden' }}">◆ Hidden GQL Mutations</a>
+      <a href="{{ url_for('telemetry_data_feed') }}"   class="{{ 'active' if active=='ctxconfusion' }}">◆ Content-Type XXE</a>
+      <a href="{{ url_for('mission_ops') }}"           class="{{ 'active' if active=='missionops' }}">◆ State Machine Bypass</a>
+      <a href="{{ url_for('svg_xxe') }}"               class="{{ 'active' if active=='svgxxe' }}">◆ SVG XXE Upload</a>
+      <a href="{{ url_for('twofa_v2_setup') }}"        class="{{ 'active' if active=='2farace' }}">◆ 2FA TOCTOU Race</a>
+
+
+      <div class="navlabel">Wave 26 — Modern / AI / Proto</div>
+      <a href="{{ url_for('ai_assistant') }}"          class="{{ 'active' if active=='aiassist' }}">◆ AI Prompt Injection</a>
+      <a href="{{ url_for('saml_acs') }}"              class="{{ 'active' if active=='samlxsw' }}">◆ SAML Signature Wrapping</a>
+      <a href="{{ url_for('postmessage_lab') }}"       class="{{ 'active' if active=='postmsg' }}">◆ PostMessage Confusion</a>
+      <a href="{{ url_for('ssrf_chain') }}"            class="{{ 'active' if active=='ssrfchain' }}">◆ SSRF → Open Redirect Chain</a>
+      <a href="{{ url_for('h2_rapid_reset') }}"        class="{{ 'active' if active=='h2rapidreset' }}">◆ HTTP/2 Rapid Reset DoS</a>
+      <a href="{{ url_for('settings_merge') }}"        class="{{ 'active' if active=='settingsmerge' }}">◆ Prototype Pollution (Merge)</a>
+      <a href="{{ url_for('timing_oracle') }}"         class="{{ 'active' if active=='timingoracle' }}">◆ Timing Oracle</a>
+      <a href="{{ url_for('oauth_device_flow') }}"     class="{{ 'active' if active=='oauthdevice' }}">◆ OAuth Device Phishing</a>
+      <a href="{{ url_for('css_injection') }}"         class="{{ 'active' if active=='cssinjection' }}">◆ CSS Injection</a>
+
+
+      <div class="navlabel">Wave 27 — API / Storage / K8s</div>
+      <a href="{{ url_for('api_v0_crew') }}"        class="{{ 'active' if active=='apiv0' }}">◆ API v0 Version Bypass</a>
+      <a href="{{ url_for('k8s_ssrf') }}"           class="{{ 'active' if active=='k8sssrf' }}">◆ Kubernetes SSRF</a>
+      <a href="{{ url_for('api_v10_crew') }}"        class="{{ 'active' if active=='jwtclaim' }}">◆ JWT Claim Confusion</a>
+      <a href="{{ url_for('admin_purge') }}"         class="{{ 'active' if active=='verbtamper' }}">◆ HTTP Verb Tampering</a>
+      <a href="{{ url_for('unicode_redirect') }}"    class="{{ 'active' if active=='unicoderedirect' }}">◆ Unicode Homograph Redirect</a>
+      <a href="{{ url_for('storage_xss') }}"         class="{{ 'active' if active=='storagexss' }}">◆ Browser Storage XSS Chain</a>
+
+      <div class="navlabel">🚩 CTF System</div>
+      <a href="{{ url_for('ctf_index') }}"           class="{{ 'active' if active=='ctf' }}">◆ Challenge Board</a>
+      <a href="{{ url_for('ctf_scoreboard') }}"      class="{{ 'active' if active=='ctfscore' }}">◆ Scoreboard</a>
+
+    </nav>
+
+    <div class="sidebar-foot">
+      Signed in as&nbsp;<span class="who">{{ session.get('username','—') }}</span>&nbsp;·&nbsp;{{ session.get('role','') }}
+      <br><a href="{{ url_for('logout') }}">Log out →</a>
+    </div>
+
+  </aside><!-- /sidebar -->
+
+  <!-- ── Main ──────────────────────────────────────────────────────── -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <div class="topbar">
+      <button id="menu-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" aria-controls="sidebar-nav">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="telemetry">
+        <span><span class="status-dot"></span>ALL SYSTEMS NOMINAL</span>
+        <span>O₂ <b>98.4%</b></span>
+        <span>HULL <b>14.6 PSI</b></span>
+        <span>ORBIT <b>412 KM</b></span>
+      </div>
+      <div class="telemetry">
+        <span id="live-clock">{{ now }}</span>
+        <span class="kbd-hint" data-cmdk>⌘K</span>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="flash {{ category }}">{{ msg }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </div>
+
+  </div><!-- /main -->
+
+</div><!-- /shell -->
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/aegis-v19.js') }}"></script>
+<script src="{{ url_for('static', filename='js/aegis-v20.js') }}"></script>
+<script src="{{ url_for('static', filename='js/aegis-v22.js') }}"></script>
+<script src="{{ url_for('static', filename='js/aegis-v23.js') }}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

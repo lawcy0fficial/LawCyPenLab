@@ -1,0 +1,18 @@
+{% extends 'admin/base.html' %}
+{% block title %}Import Archive{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Bulk Media Import</h1><p>Upload a .zip archive of crew photos/documents to import into the media library in one step.</p></div>
+<div class="panel">
+  <form method="POST" enctype="multipart/form-data">
+    <label>Archive (.zip)</label>
+    <input type="file" name="archive" accept=".zip" required>
+    <button class="btn" type="submit">Import</button>
+  </form>
+</div>
+{% if result %}
+<div class="panel">
+  <h2>Import <span>Result</span></h2>
+  <pre class="code">{{ result }}</pre>
+</div>
+{% endif %}
+{% endblock %}

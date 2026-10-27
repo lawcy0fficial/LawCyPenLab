@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Cargo Manifest{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Cargo Manifest</h1><p>Full station inventory across all bays.</p></div>
+<div class="panel">
+  <form method="GET">
+    <input type="text" name="bay" placeholder="Filter by bay, e.g. Bay A" value="{{ filt }}">
+    <button class="btn" type="submit">Filter</button>
+  </form>
+</div>
+<div class="panel">
+  <a href="{{ url_for('cargo_export_csv') }}" class="btn secondary small">Export Manifest (.csv) →</a>
+</div>
+<div class="panel" id="claim">
+  <table class="data-table">
+    <tr><th>Manifest</th><th>Description</th><th>Qty</th><th>Bay</th><th>Status</th><th></th></tr>
+    {% for i in items %}
+    <tr>
+      <td>{{ i['manifest_code'] }}</td>
+      <td>
+        {{ i['description'] }}
+        <form method="POST" action="{{ url_for('cargo_note', cid=i['id']) }}" style="display:flex;gap:6px;margin-top:6px;">
+          <input type="text" name="note" placeholder="Update description…" style="margin:0;font-size:11px;padding:5px 8px;">
+          <button class="btn secondary small" type="submit">Save</button>
+        </form>
+      </td>
+      <td>{{ i['quantity'] }}</td>
+      <td>{{ i['bay'] }}</td>
+      <td>{% if i['restricted'] %}<span class="badge danger">RESTRICTED</span>{% else %}<span class="badge ok">CLEAR</span>{% endif %}</td>
+      <td>
+        <button class="btn secondary small" onclick="claimItem({{ i['id'] }})">Claim 1</button>
+        <form onsubmit="return claimCustom(event, {{ i['id'] }})" style="display:inline-flex;gap:4px;margin-top:4px;">
+          <input type="number" name="amount" placeholder="qty" style="width:70px;margin:0;font-size:11px;padding:5px 6px;">
+          <button class="btn secondary small" type="submit">Claim Custom</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  <p id="claim-result" class="mono-dim" style="margin-top:12px;"></p>
+</div>
+<script>
+  function claimItem(id) {
+    fetch('/cargo/claim/' + id, {method: 'POST'})
+      .then(r => r.json())
+      .then(d => { document.getElementById('claim-result').textContent = JSON.stringify(d); });
+  }
+  function claimCustom(e, id) {
+    e.preventDefault();
+    const amount = e.target.querySelector('input[name=amount]').value;
+    fetch('/cargo/claim-custom/' + id, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: 'amount=' + encodeURIComponent(amount)
+    })
+      .then(r => r.json())
+      .then(d => { document.getElementById('claim-result').textContent = JSON.stringify(d); });
+    return false;
+  }
+</script>
+{% endblock %}

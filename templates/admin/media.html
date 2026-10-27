@@ -1,0 +1,21 @@
+{% extends 'admin/base.html' %}
+{% block title %}Media Library{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Media Library</h1><p>Browse and preview files uploaded by crew.</p></div>
+<div class="panel">
+  <table class="data-table">
+    <tr><th>File</th><th></th></tr>
+    {% for f in files %}
+    <tr><td>{{ f }}</td><td><a class="btn secondary small" href="{{ url_for('admin_media', view=f) }}">Preview</a></td></tr>
+    {% else %}
+    <tr><td colspan="2" class="mono-dim">No files uploaded yet.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% if content %}
+<div class="panel">
+  <h2>{{ view }}</h2>
+  <pre class="code">{{ content }}</pre>
+</div>
+{% endif %}
+{% endblock %}

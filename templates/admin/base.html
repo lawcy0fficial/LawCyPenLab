@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Admin{% endblock %} :: AEGIS Admin Console</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<style>
+  .sidebar .brand .mark{color:var(--amber);}
+  nav.navlist a.active{color:var(--amber);border-left-color:var(--amber);}
+  nav.navlist a.active::after{background:var(--amber);box-shadow:0 0 8px var(--amber);}
+  nav.navlist a:hover{color:var(--amber);}
+  .kbd-hint:hover{border-color:var(--amber);color:var(--amber);}
+</style>
+</head>
+<body>
+<canvas id="starfield"></canvas>
+<div id="page-progress" style="background:linear-gradient(90deg, var(--amber), var(--cyan));"></div>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark">LAWCYPENLAB // ADMIN CONSOLE</div>
+      <div class="name">OPS <span style="color:var(--amber);">ADMIN</span></div>
+    </div>
+    <nav class="navlist">
+      <div class="navlabel">Content</div>
+      <a href="{{ url_for('cms_admin_dashboard') }}" class="{{ 'active' if active=='dashboard' }}">◆ Dashboard</a>
+      <a href="{{ url_for('admin_posts') }}" class="{{ 'active' if active=='posts' }}">◆ Bulletins</a>
+      <a href="{{ url_for('admin_comments') }}" class="{{ 'active' if active=='comments' }}">◆ Comments</a>
+
+      <div class="navlabel">System</div>
+      <a href="{{ url_for('admin_plugins') }}" class="{{ 'active' if active=='plugins' }}">◆ Plugins</a>
+      <a href="{{ url_for('admin_media') }}" class="{{ 'active' if active=='media' }}">◆ Media Library</a>
+      <a href="{{ url_for('admin_media_import') }}" class="{{ 'active' if active=='mediaimport' }}">◆ Import Archive</a>
+      <a href="{{ url_for('admin_users') }}" class="{{ 'active' if active=='users' }}">◆ Users</a>
+      <a href="{{ url_for('admin_crew_report') }}" class="{{ 'active' if active=='crewreport' }}">◆ Crew Report</a>
+      <a href="{{ url_for('admin_crew_bios_digest') }}" class="{{ 'active' if active=='biosdigest' }}">◆ Crew Bios Digest</a>
+      <a href="{{ url_for('admin_settings') }}" class="{{ 'active' if active=='settings' }}">◆ Settings</a>
+
+      <div class="navlabel">Station</div>
+      <a href="{{ url_for('dashboard') }}">◆ Back to Crew App</a>
+    </nav>
+    <div class="sidebar-foot">
+      Admin session<br><span class="who">{{ session.get('username','—') }}</span>
+      <br><a href="{{ url_for('admin_logout') }}">Log out →</a>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="telemetry"><span><span class="status-dot" style="background:var(--amber);box-shadow:0 0 6px var(--amber);"></span>ADMIN CONSOLE</span></div>
+      <div class="telemetry">
+        <span>{{ now }}</span>
+        <span class="kbd-hint" data-cmdk>⌘K quick nav</span>
+      </div>
+    </div>
+    <div class="content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, msg in messages %}<div class="flash {{ category }}">{{ msg }}</div>{% endfor %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

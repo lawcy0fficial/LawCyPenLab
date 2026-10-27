@@ -1,0 +1,29 @@
+{% extends 'admin/base.html' %}
+{% block title %}Crew Report{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Crew Activity Report</h1><p>Cross-references each crew member's bio against the username directory to surface related mentions.</p></div>
+{% for row in report_rows %}
+<div class="panel">
+  <h2>Source crew #{{ row.source_user_id }}</h2>
+  <p class="mono-dim">Bio: {{ row.bio_snippet }}</p>
+  <table class="data-table">
+    <tr><th>ID</th><th>Username</th><th>Email</th><th>Role</th></tr>
+    {% for m in row.matches %}
+    <tr><td>{{ m.id }}</td><td>{{ m.username }}</td><td>{{ m.email }}</td><td>{{ m.role }}</td></tr>
+    {% else %}
+    <tr><td colspan="4" class="mono-dim">No matches.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endfor %}
+{% for err in errors %}
+<div class="panel">
+  <h2>Source crew #{{ err.source_user_id }} — query error</h2>
+  <p class="mono-dim">Bio: {{ err.bio_snippet }}</p>
+  <pre class="code">{{ err.error }}</pre>
+</div>
+{% endfor %}
+{% if not report_rows and not errors %}
+<div class="panel"><p class="mono-dim">No crew bios set yet.</p></div>
+{% endif %}
+{% endblock %}

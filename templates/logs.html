@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Station Logs — Path Traversal{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p3">P3</span>
+    <h2>Station Log Viewer</h2>
+    <div><span class="mono-dim">CWE-22 · Path traversal / LFI · Filename taken from the query string with no sanitisation</span></div>
+  </div>
+  <div class="vuln-info">
+    The <code>file</code> parameter below is joined directly onto the log
+    directory with no sanitisation, so <code>?file=../app.py</code> or
+    <code>?file=../.env</code> reads any file the web process can see —
+    not just the logs listed in the index.
+  </div>
+  <div class="hint-box">
+    <b>Try it:</b> the index below only lists the logs the station
+    <i>wants</i> you to see. Use <code>../</code> to climb out of the log
+    directory, e.g. <code>../.env</code> or <code>../seed.py</code>.
+  </div>
+</div>
+
+<div class="panel">
+  <h2>Read a Log File</h2>
+  <form method="get" action="{{ url_for('logs') }}">
+    <input class="input-field input-wide" type="text" name="file"
+           placeholder="e.g. 2024-05-01.log or ../.env" value="{{ fname or '' }}">
+    <button class="btn" type="submit">Read File</button>
+  </form>
+  {% if fname %}
+  <h4>{{ fname }}</h4>
+  <pre class="log-block">{{ content }}</pre>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <h2>Known Log Index</h2>
+  {% if entries %}
+  <table class="data-table">
+    <tr><th>Filename</th><th>Summary</th><th></th></tr>
+    {% for e in entries %}
+    <tr>
+      <td><code>{{ e.filename }}</code></td>
+      <td>{{ e.summary }}</td>
+      <td><a class="btn secondary small" href="{{ url_for('logs', file=e.filename) }}">Read</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="mono-dim">No log entries indexed yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}Support{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Support Tickets</h1><p>Report and track station issues.</p></div>
+<div class="panel">
+  <form method="POST">
+    <label>Subject</label>
+    <input type="text" name="subject" required>
+    <label>Details</label>
+    <textarea name="body" rows="3" required></textarea>
+    <button class="btn" type="submit">Open Ticket</button>
+  </form>
+</div>
+<div class="panel">
+  <table class="data-table">
+    <tr><th>#</th><th>Subject</th><th>Reported By</th><th>Status</th><th></th></tr>
+    {% for t in tickets %}
+    <tr>
+      <td>{{ t['id'] }}</td>
+      <td>{{ t['subject'] }}</td>
+      <td>{{ t['username'] }}</td>
+      <td><span class="badge {{ 'ok' if t['status']=='closed' else 'warn' }}">{{ t['status'] }}</span></td>
+      <td><a class="btn secondary small" href="{{ url_for('ticket_detail', tid=t['id']) }}">View</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

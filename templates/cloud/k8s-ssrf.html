@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Kubernetes SSRF{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p1">P1</span>
+    <h2>Kubernetes Internal API SSRF</h2>
+    <div><span class="mono-dim">CWE-918 · SSRF to http://kubernetes.default.svc/ · Reads secrets, tokens, configmaps</span></div>
+  </div>
+  <div class="vuln-info">
+    In a real Kubernetes deployment, every pod can reach the K8s API server at
+    <code>http://kubernetes.default.svc/</code>. SSRF from the web container lets an
+    attacker enumerate namespaces, read <code>Secrets</code> (DB passwords, JWT keys),
+    list <code>ServiceAccounts</code>, and potentially escalate to full cluster control.
+  </div>
+  <div class="hint-box">
+    <b>K8s API targets (simulation on localhost:5000/k8s-api/):</b>
+    <ul>
+      <li><code>http://127.0.0.1:5000/k8s-api/api/v1/namespaces</code></li>
+      <li><code>http://127.0.0.1:5000/k8s-api/api/v1/namespaces/aegis-prod/secrets</code></li>
+      <li><code>http://127.0.0.1:5000/k8s-api/api/v1/namespaces/aegis-prod/configmaps</code></li>
+      <li><code>http://127.0.0.1:5000/k8s-api/api/v1/nodes</code></li>
+    </ul>
+    Real chain: <code>SSRF → kubernetes.default.svc → /api/v1/namespaces/kube-system/secrets → admin SA token</code>
+  </div>
+</div>
+{% if result %}
+<div class="panel">
+  <h2>Response</h2>
+  <pre class="result-block">{{ result | tojson(indent=2) }}</pre>
+</div>
+{% endif %}
+<div class="panel">
+  <form method="POST" class="lab-form">
+    <label>K8s API URL (SSRF target)</label>
+    <input name="url" value="{{ url_in | e }}" class="input-field input-wide">
+    <button class="btn btn-danger" type="submit">Fetch via SSRF</button>
+  </form>
+</div>
+{% endblock %}

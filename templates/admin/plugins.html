@@ -1,0 +1,31 @@
+{% extends 'admin/base.html' %}
+{% block title %}Plugins{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Plugins</h1><p>Extend the ops console with custom Python plugin modules.</p></div>
+<div class="panel">
+  <form method="POST" enctype="multipart/form-data">
+    <label>Plugin Name</label>
+    <input type="text" name="name" required>
+    <label>Plugin File (.py)</label>
+    <input type="file" name="plugin_file" required>
+    <button class="btn" type="submit">Install Plugin</button>
+  </form>
+</div>
+<div class="panel">
+  <table class="data-table">
+    <tr><th>Name</th><th>File</th><th>Status</th><th></th></tr>
+    {% for p in plugins %}
+    <tr>
+      <td>{{ p['name'] }}</td>
+      <td class="mono-dim">{{ p['filename'] }}</td>
+      <td><span class="badge {{ 'ok' if p['enabled'] else 'danger' }}">{{ 'enabled' if p['enabled'] else 'disabled' }}</span></td>
+      <td>
+        <form method="POST" action="{{ url_for('admin_plugin_run', pid=p['id']) }}">
+          <button class="btn small" type="submit">Run</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

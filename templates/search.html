@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Global Search{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Global Search</h1><p>Search cargo manifests, logs, and station records.</p></div>
+<div class="panel">
+  <form method="GET">
+    <input type="text" name="q" placeholder="Search description, manifest code…" value="{{ q }}">
+    <button class="btn" type="submit">Search</button>
+  </form>
+</div>
+{% if q %}
+<div class="panel">
+  <h2>Results for <span>&ldquo;{{ q }}&rdquo;</span></h2>
+  <table class="data-table">
+    <tr><th>Manifest</th><th>Description</th></tr>
+    {% for r in results %}
+    <tr><td>{{ r['title'] }}</td><td>{{ r['body'] }}</td></tr>
+    {% else %}
+    <tr><td colspan="2" class="mono-dim">No matches.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+{% endblock %}

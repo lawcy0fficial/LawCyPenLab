@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}IoT Fleet{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>IoT Device Fleet</h1><p>Sensor and actuator nodes distributed across the station.</p></div>
+<div class="panel">
+  <table class="data-table">
+    <tr><th>Device</th><th>IP</th><th>Credentials</th><th>Firmware</th><th></th></tr>
+    {% for d in devices %}
+    <tr>
+      <td>{{ d.name }}</td>
+      <td class="mono-dim">{{ d.ip }}</td>
+      <td class="mono-dim">{{ d.cred }}</td>
+      <td>{{ d.fw }}</td>
+      <td><a class="btn secondary small" href="{{ url_for('iot_firmware', did=d.id) }}">Firmware →</a>
+      <a class="btn secondary small" href="{{ url_for('iot_firmware_signed', did=d.id) }}">Signed FW →</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% if firmware_files %}
+<div class="panel">
+  <h2>Uploaded <span>Firmware Validators</span></h2>
+  <p class="mono-dim">{{ firmware_files|join(', ') }}</p>
+</div>
+{% endif %}
+{% endblock %}

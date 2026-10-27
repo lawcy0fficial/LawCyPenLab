@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Console :: AEGIS Station</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<canvas id="starfield"></canvas>
+<div class="auth-wrap">
+  <div class="auth-scanline"></div>
+  <div class="auth-card">
+    <div class="brand">
+      <div class="mark" style="color:var(--amber);">LAWCYPENLAB // ADMIN CONSOLE</div>
+      <div class="name">OPS <span>ADMIN</span></div>
+    </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, msg in messages %}<div class="flash {{ category }}">{{ msg }}</div>{% endfor %}
+    {% endwith %}
+    <form method="POST">
+      <label>Admin Username</label>
+      <input type="text" name="username" required>
+      <label>Admin Password</label>
+      <input type="password" name="password" required>
+      <button class="btn" style="width:100%;justify-content:center;background:var(--amber);" type="submit">Enter Console →</button>
+    </form>
+    <hr class="hr">
+    <div class="auth-foot"><a href="{{ url_for('login') }}">← Crew sign-in</a></div>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

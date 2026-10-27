@@ -1,0 +1,14 @@
+{% extends 'admin/base.html' %}
+{% block title %}{{ 'Edit' if post else 'New' }} Bulletin{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>{{ 'Edit' if post else 'New' }} Bulletin</h1><p>Content supports raw HTML for rich formatting.</p></div>
+<div class="panel">
+  <form method="POST">
+    <label>Title</label>
+    <input type="text" name="title" value="{{ post['title'] if post else '' }}" required>
+    <label>Content (HTML)</label>
+    <textarea name="content" rows="10">{{ post['content'] if post else '' }}</textarea>
+    <button class="btn" type="submit">{{ 'Save' if post else 'Publish' }}</button>
+  </form>
+</div>
+{% endblock %}

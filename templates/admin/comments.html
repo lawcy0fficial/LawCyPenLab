@@ -1,0 +1,30 @@
+{% extends 'admin/base.html' %}
+{% block title %}Comments{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Comments</h1><p>Moderate comments left on the ops board.</p></div>
+<div class="panel">
+  <table class="data-table">
+    <tr><th>Post</th><th>Author</th><th>Comment</th><th>Status</th><th></th></tr>
+    {% for c in comments %}
+    <tr>
+      <td>{{ c['post_title'] }}</td>
+      <td>{{ c['author_name'] }}</td>
+      <td>{{ c['body']|safe }}</td>
+      <td><span class="badge {{ 'ok' if c['approved'] else 'warn' }}">{{ 'approved' if c['approved'] else 'pending' }}</span></td>
+      <td>
+        {% if not c['approved'] %}
+        <form method="POST" style="display:inline;">
+          <input type="hidden" name="id" value="{{ c['id'] }}">
+          <button class="btn small" name="action" value="approve" type="submit">Approve</button>
+        </form>
+        {% endif %}
+        <form method="POST" style="display:inline;">
+          <input type="hidden" name="id" value="{{ c['id'] }}">
+          <button class="btn danger small" name="action" value="delete" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

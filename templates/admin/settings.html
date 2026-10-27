@@ -1,0 +1,13 @@
+{% extends 'admin/base.html' %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>System Settings</h1><p>Runtime configuration for the ops console.</p></div>
+<div class="panel">
+  <table class="data-table">
+    <tr><td style="width:220px;">Flask secret key</td><td class="mono-dim">{{ secret_key }}</td></tr>
+    <tr><td>JWT signing secret</td><td class="mono-dim">{{ jwt_secret }}</td></tr>
+    <tr><td>Admin override code</td><td class="mono-dim">{{ override_code }}</td></tr>
+    <tr><td>Debug mode</td><td><span class="badge {{ 'danger' if debug else 'ok' }}">{{ 'ON' if debug else 'off' }}</span></td></tr>
+  </table>
+</div>
+{% endblock %}

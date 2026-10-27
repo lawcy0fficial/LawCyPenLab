@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Commander Dashboard{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Station Commander Dashboard</h1><p>Full station authority — above the ops admin console.</p></div>
+<div class="grid grid-3">
+  <div class="panel"><div class="stat"><div class="v">{{ stats.total_crew }}</div><div class="l">Total Crew</div></div></div>
+  <div class="panel"><div class="stat"><div class="v">{{ stats.admins }}</div><div class="l">Admin Accounts</div></div></div>
+  <div class="panel"><div class="stat"><div class="v">{{ stats.commander_actions_logged }}</div><div class="l">Logged Actions</div></div></div>
+</div>
+<div class="panel">
+  <h2>Recent <span>Commander Actions</span></h2>
+  <table class="data-table">
+    <tr><th>Directive</th><th>Target</th><th>At</th></tr>
+    {% for entry in log %}
+    <tr><td>{{ entry.directive }}</td><td>{{ entry.target }}</td><td class="mono-dim">{{ entry.at }}</td></tr>
+    {% else %}
+    <tr><td colspan="3" class="mono-dim">No actions logged.</td></tr>
+    {% endfor %}
+  </table>
+  <a href="{{ url_for('commander_override') }}" class="btn small" style="margin-top:12px;background:var(--amber);">Issue Override →</a>
+</div>
+{% endblock %}

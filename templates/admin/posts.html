@@ -1,0 +1,24 @@
+{% extends 'admin/base.html' %}
+{% block title %}Bulletins{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Bulletins</h1><p>Manage station-wide ops board posts.</p></div>
+<a href="{{ url_for('admin_post_new') }}" class="btn small" style="margin-bottom:16px;display:inline-block;">+ New Bulletin</a>
+<div class="panel">
+  <table class="data-table">
+    <tr><th>Title</th><th>Author</th><th>Date</th><th></th></tr>
+    {% for p in posts %}
+    <tr>
+      <td>{{ p['title'] }}</td>
+      <td>{{ p['username'] }}</td>
+      <td>{{ p['created_at'] }}</td>
+      <td>
+        <a class="btn secondary small" href="{{ url_for('admin_post_edit', pid=p['id']) }}">Edit</a>
+        <form method="POST" action="{{ url_for('admin_post_delete', pid=p['id']) }}" style="display:inline;">
+          <button class="btn danger small" type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}
